@@ -22,6 +22,14 @@ npx wp-env start
 
 The site runs at http://localhost:8888 with the plugin active. Log in with `admin` and `password`.
 
+A second site has the [Excimer](https://www.mediawiki.org/wiki/Excimer) PHP extension installed, for testing flame graphs:
+
+```sh
+npx wp-env start --config=.wp-env.excimer.json
+```
+
+This site runs at http://localhost:8890.
+
 ## License
 
 [GPL-3.0-or-later](LICENSE)
