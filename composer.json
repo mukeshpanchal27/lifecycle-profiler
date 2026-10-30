@@ -1,0 +1,26 @@
+{
+	"name": "mukeshpanchal27/lifecycle-profiler",
+	"description": "Times the whole WordPress request, from bootstrap and plugin load to every hook callback.",
+	"type": "wordpress-plugin",
+	"license": "GPL-3.0-or-later",
+	"require": {
+		"php": ">=7.4"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"platform": {
+			"php": "7.4"
+		}
+	},
+	"scripts": {
+		"lint": "phpcs",
+		"format": "phpcbf"
+	},
+	"require-dev": {
+		"wp-coding-standards/wpcs": "^3.4",
+		"phpcompatibility/phpcompatibility-wp": "^2.1",
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.2"
+	}
+}
