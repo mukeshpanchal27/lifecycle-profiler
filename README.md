@@ -11,6 +11,17 @@ Early development. The plugin activates but does not profile anything yet. See t
 - PHP 7.4 or later
 - WordPress 6.8 or later
 
+## Local development
+
+You need Node.js and Docker.
+
+```sh
+npm install
+npx wp-env start
+```
+
+The site runs at http://localhost:8888 with the plugin active. Log in with `admin` and `password`.
+
 ## License
 
 [GPL-3.0-or-later](LICENSE)

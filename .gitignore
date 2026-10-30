@@ -52,3 +52,6 @@ wp-config.php
 
 # PHPCS
 /phpcs-report.xml
+
+# Node
+/node_modules/
