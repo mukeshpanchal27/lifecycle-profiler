@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<ruleset name="Lifecycle Profiler">
+	<description>Coding standards for Lifecycle Profiler.</description>
+
+	<file>.</file>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+
+	<arg value="sp"/>
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg name="parallel" value="8"/>
+
+	<rule ref="WordPress"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="lifecycle-profiler"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="lifecycle_profiler"/>
+				<element value="LifecycleProfiler"/>
+			</property>
+		</properties>
+	</rule>
+
+	<config name="testVersion" value="7.4-"/>
+	<config name="minimum_wp_version" value="6.8"/>
+	<rule ref="PHPCompatibilityWP"/>
+</ruleset>
