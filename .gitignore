@@ -49,3 +49,6 @@ wp-config.php
 
 # Composer
 /vendor/
+
+# PHPCS
+/phpcs-report.xml

@@ -1,0 +1,36 @@
+name: Coding standards
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpcs:
+    name: PHPCS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer, cs2pr
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Run PHPCS
+        run: composer lint -- --report-full --report-checkstyle=./phpcs-report.xml
+
+      - name: Show PHPCS results in pull request
+        if: ${{ always() && hashFiles('phpcs-report.xml') != '' }}
+        run: cs2pr ./phpcs-report.xml
