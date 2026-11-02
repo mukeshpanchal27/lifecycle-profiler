@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/session.php';
+
 /*
  * All profiler times use microtime( true ), the same clock as
  * REQUEST_TIME_FLOAT, so durations between them are correct.
