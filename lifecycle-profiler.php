@@ -28,6 +28,7 @@ require_once LIFECYCLE_PROFILER_DIR . 'includes/session.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/report.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/storage.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-bar.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-page.php';
 
 register_activation_hook( __FILE__, 'LifecycleProfiler\install_loader' );
 register_deactivation_hook( __FILE__, 'LifecycleProfiler\remove_loader' );
