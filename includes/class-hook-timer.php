@@ -99,13 +99,19 @@ final class Hook_Timer {
 			$key = $item['hook'] . ' ' . $item['priority'] . ' ' . $item['id'];
 
 			if ( ! isset( $entries[ $key ] ) ) {
+				$location = get_callback_location( $timer->get_callback() );
+				$source   = get_file_source( $location ? $location['file'] : null );
+
 				$entries[ $key ] = array(
-					'hook'       => $item['hook'],
-					'priority'   => $item['priority'],
-					'callback'   => get_callback_name( $timer->get_callback() ),
-					'calls'      => 0,
-					'total_time' => 0.0,
-					'self_time'  => 0.0,
+					'hook'        => $item['hook'],
+					'priority'    => $item['priority'],
+					'callback'    => get_callback_name( $timer->get_callback() ),
+					'source_type' => $source['type'],
+					'source_name' => $source['name'],
+					'location'    => $location ? get_relative_path( $location['file'] ) . ':' . $location['line'] : '',
+					'calls'       => 0,
+					'total_time'  => 0.0,
+					'self_time'   => 0.0,
 				);
 			}
 
