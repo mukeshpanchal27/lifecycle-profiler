@@ -27,6 +27,7 @@ require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/report.php';
 require_once __DIR__ . '/class-plugin-load-timer.php';
 require_once __DIR__ . '/class-phase-timer.php';
+require_once __DIR__ . '/class-timed-callback.php';
 
 if ( LifecycleProfiler\is_session_active() ) {
 	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
