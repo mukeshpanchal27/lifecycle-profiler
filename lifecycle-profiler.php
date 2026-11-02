@@ -22,3 +22,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'LIFECYCLE_PROFILER_VERSION', '0.0.1' );
 define( 'LIFECYCLE_PROFILER_FILE', __FILE__ );
 define( 'LIFECYCLE_PROFILER_DIR', plugin_dir_path( __FILE__ ) );
+
+require_once LIFECYCLE_PROFILER_DIR . 'includes/loader.php';
+
+register_activation_hook( __FILE__, 'LifecycleProfiler\install_loader' );
+register_deactivation_hook( __FILE__, 'LifecycleProfiler\remove_loader' );
