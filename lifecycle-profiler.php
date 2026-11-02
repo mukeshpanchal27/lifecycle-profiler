@@ -28,6 +28,8 @@ require_once LIFECYCLE_PROFILER_DIR . 'includes/session.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/report.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/storage.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/summary.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/spans.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/api.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-bar.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-page.php';
 

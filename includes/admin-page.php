@@ -62,6 +62,7 @@ function render_admin_page(): void {
 			<?php render_report_meta( $report['meta'] ?? array() ); ?>
 			<?php render_source_table( get_source_totals( $report ) ); ?>
 			<?php render_phase_table( $report['phases'] ?? array(), (float) ( $report['meta']['total_time'] ?? 0 ) ); ?>
+			<?php render_span_table( $report['spans'] ?? array() ); ?>
 		<?php endif; ?>
 	</div>
 	<?php
@@ -209,4 +210,41 @@ function get_source_label( string $type, string $name ): string {
 	}
 
 	return $name;
+}
+
+/**
+ * Renders custom spans from the timing API.
+ *
+ * Shows nothing if the report has no spans.
+ *
+ * @param array<string, array<string, mixed>> $spans Span entries.
+ */
+function render_span_table( array $spans ): void {
+	if ( array() === $spans ) {
+		return;
+	}
+	?>
+	<h2><?php esc_html_e( 'Custom spans', 'lifecycle-profiler' ); ?></h2>
+
+	<table class="widefat striped">
+		<thead>
+			<tr>
+				<th scope="col"><?php esc_html_e( 'Span', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'First start (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Calls', 'lifecycle-profiler' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach ( $spans as $name => $span ) : ?>
+				<tr>
+					<td><code><?php echo esc_html( $name ); ?></code></td>
+					<td><?php echo esc_html( number_format_i18n( (float) $span['start'], 2 ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (float) $span['total_time'], 2 ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (int) $span['calls'] ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php
 }
