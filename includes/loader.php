@@ -110,6 +110,29 @@ function is_loader_installed(): bool {
 }
 
 /**
+ * Transient that pauses new write attempts after a failed one.
+ */
+const LOADER_RETRY_TRANSIENT = 'lifecycle_profiler_loader_retry';
+
+/**
+ * Writes the loader file when it is missing.
+ *
+ * The activation hook does not run when a site updates the plugin without
+ * deactivating it, so the loader may never have been written. After a failed
+ * write, this function waits an hour before it tries again.
+ */
+function maybe_install_loader(): void {
+	if ( is_loader_installed() || ! current_user_can( 'activate_plugins' ) || get_transient( LOADER_RETRY_TRANSIENT ) ) {
+		return;
+	}
+
+	if ( ! install_loader() ) {
+		set_transient( LOADER_RETRY_TRANSIENT, 1, HOUR_IN_SECONDS );
+	}
+}
+add_action( 'admin_init', __NAMESPACE__ . '\maybe_install_loader' );
+
+/**
  * Shows an error notice when the loader file is missing.
  *
  * Without the loader, the profiler cannot time bootstrap or plugin load.
