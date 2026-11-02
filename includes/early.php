@@ -32,8 +32,12 @@ require_once __DIR__ . '/callbacks.php';
 require_once __DIR__ . '/class-hook-timer.php';
 require_once __DIR__ . '/server-timing.php';
 require_once __DIR__ . '/storage.php';
+require_once __DIR__ . '/spans.php';
+require_once __DIR__ . '/api.php';
 
 if ( LifecycleProfiler\is_session_active() ) {
+	define( 'LIFECYCLE_PROFILER_PROFILING', true );
+
 	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
 	( new LifecycleProfiler\Phase_Timer() )->register();
 	( new LifecycleProfiler\Hook_Timer() )->register();
