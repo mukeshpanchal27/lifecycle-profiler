@@ -60,6 +60,7 @@ function render_admin_page(): void {
 			<p><?php esc_html_e( 'No report yet. Click "Profiler: OFF" in the admin bar to start a session, then load the page you want to profile.', 'lifecycle-profiler' ); ?></p>
 		<?php else : ?>
 			<?php render_report_meta( $report['meta'] ?? array() ); ?>
+			<?php render_source_table( get_source_totals( $report ) ); ?>
 			<?php render_phase_table( $report['phases'] ?? array(), (float) ( $report['meta']['total_time'] ?? 0 ) ); ?>
 		<?php endif; ?>
 	</div>
@@ -125,4 +126,87 @@ function render_phase_table( array $phases, float $total_time ): void {
 		</tbody>
 	</table>
 	<?php
+}
+
+/**
+ * Renders load time and hook time for each source, slowest first.
+ *
+ * @param array<int, array<string, mixed>> $rows Rows from get_source_totals().
+ */
+function render_source_table( array $rows ): void {
+	?>
+	<h2><?php esc_html_e( 'Plugins, themes and core', 'lifecycle-profiler' ); ?></h2>
+	<p><?php esc_html_e( 'Load time is the time to include the plugin files. Hook time is the self time of the source\'s hook callbacks.', 'lifecycle-profiler' ); ?></p>
+
+	<?php if ( array() === $rows ) : ?>
+		<p><?php esc_html_e( 'This report has no plugin or hook times.', 'lifecycle-profiler' ); ?></p>
+		<?php
+		return;
+	endif;
+	?>
+
+	<table class="widefat striped">
+		<thead>
+			<tr>
+				<th scope="col"><?php esc_html_e( 'Source', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Load time (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Hook time (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Callbacks', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Calls', 'lifecycle-profiler' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach ( $rows as $row ) : ?>
+				<tr>
+					<td>
+						<strong><?php echo esc_html( get_source_label( $row['type'], $row['name'] ) ); ?></strong><br />
+						<span class="description"><?php echo esc_html( $row['type'] . ': ' . $row['name'] ); ?></span>
+					</td>
+					<td><?php echo esc_html( number_format_i18n( (float) $row['load_time'], 2 ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (float) $row['hook_time'], 2 ) ); ?></td>
+					<td><strong><?php echo esc_html( number_format_i18n( (float) $row['total_time'], 2 ) ); ?></strong></td>
+					<td><?php echo esc_html( number_format_i18n( (int) $row['callbacks'] ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (int) $row['calls'] ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php
+}
+
+/**
+ * Returns a display name for a source.
+ *
+ * @param string $type Source type.
+ * @param string $name Source name: a folder or file name.
+ * @return string Plugin or theme name if known, otherwise the source name.
+ */
+function get_source_label( string $type, string $name ): string {
+	static $plugins = null;
+
+	if ( 'plugin' === $type ) {
+		if ( null === $plugins ) {
+			if ( ! function_exists( 'get_plugins' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+			$plugins = get_plugins();
+		}
+
+		foreach ( $plugins as $basename => $data ) {
+			if ( strtok( $basename, '/' ) === $name && ! empty( $data['Name'] ) ) {
+				return $data['Name'];
+			}
+		}
+	}
+
+	if ( 'theme' === $type ) {
+		$theme = wp_get_theme( $name );
+
+		if ( $theme->exists() ) {
+			return $theme->get( 'Name' );
+		}
+	}
+
+	return $name;
 }
