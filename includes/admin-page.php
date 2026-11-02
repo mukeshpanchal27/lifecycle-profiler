@@ -62,6 +62,7 @@ function render_admin_page(): void {
 			<?php render_report_meta( $report['meta'] ?? array() ); ?>
 			<?php render_source_table( get_source_totals( $report ) ); ?>
 			<?php render_phase_table( $report['phases'] ?? array(), (float) ( $report['meta']['total_time'] ?? 0 ) ); ?>
+			<?php render_template_section( $report ); ?>
 			<?php render_span_table( $report['spans'] ?? array() ); ?>
 		<?php endif; ?>
 	</div>
@@ -127,6 +128,133 @@ function render_phase_table( array $phases, float $total_time ): void {
 		</tbody>
 	</table>
 	<?php
+}
+
+/**
+ * Renders the template, template parts and blocks of a report.
+ *
+ * @param array<string, mixed> $report Report data.
+ */
+function render_template_section( array $report ): void {
+	$template = $report['template']['main'] ?? null;
+	$parts    = sort_slowest_first( $report['template_parts'] ?? array(), 'total_time' );
+	$blocks   = sort_slowest_first( $report['blocks'] ?? array(), 'self_time' );
+	?>
+	<h2><?php esc_html_e( 'Templates and blocks', 'lifecycle-profiler' ); ?></h2>
+
+	<?php if ( null === $template && array() === $parts && array() === $blocks ) : ?>
+		<p><?php esc_html_e( 'This request loaded no template and rendered no blocks.', 'lifecycle-profiler' ); ?></p>
+		<?php
+		return;
+	endif;
+	?>
+
+	<?php if ( is_array( $template ) ) : ?>
+		<p>
+			<?php
+			if ( ! empty( $template['block_template'] ) ) {
+				printf(
+					/* translators: 1: Block template ID, 2: Template file path, 3: Time in milliseconds. */
+					esc_html__( 'Template: %1$s, loaded by %2$s, %3$s ms.', 'lifecycle-profiler' ),
+					'<code>' . esc_html( $template['block_template'] ) . '</code>',
+					'<code>' . esc_html( $template['file'] ?? '' ) . '</code>',
+					esc_html( number_format_i18n( (float) ( $template['duration'] ?? 0 ), 2 ) )
+				);
+			} else {
+				printf(
+					/* translators: 1: Template file path, 2: Time in milliseconds. */
+					esc_html__( 'Template: %1$s, %2$s ms.', 'lifecycle-profiler' ),
+					'<code>' . esc_html( $template['file'] ?? '' ) . '</code>',
+					esc_html( number_format_i18n( (float) ( $template['duration'] ?? 0 ), 2 ) )
+				);
+			}
+			?>
+			<br />
+			<span class="description"><?php esc_html_e( 'The template time includes every hook that fires while the template runs, such as wp_head and wp_footer.', 'lifecycle-profiler' ); ?></span>
+		</p>
+	<?php endif; ?>
+
+	<?php if ( array() !== $parts ) : ?>
+		<h3><?php esc_html_e( 'Template parts', 'lifecycle-profiler' ); ?></h3>
+		<p><?php esc_html_e( 'Slowest first. The time of a part includes the parts nested inside it.', 'lifecycle-profiler' ); ?></p>
+
+		<table class="widefat striped">
+			<thead>
+				<tr>
+					<th scope="col"><?php esc_html_e( 'Template part', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Type', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Calls', 'lifecycle-profiler' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $parts as $part ) : ?>
+					<tr>
+						<td><code><?php echo esc_html( $part['name'] ?? '' ); ?></code></td>
+						<td><?php echo esc_html( 'block' === ( $part['type'] ?? '' ) ? __( 'Block', 'lifecycle-profiler' ) : __( 'File', 'lifecycle-profiler' ) ); ?></td>
+						<td><?php echo esc_html( number_format_i18n( (float) $part['total_time'], 2 ) ); ?></td>
+						<td><?php echo esc_html( number_format_i18n( (int) ( $part['calls'] ?? 0 ) ) ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	<?php endif; ?>
+
+	<?php if ( array() !== $blocks ) : ?>
+		<h3><?php esc_html_e( 'Blocks', 'lifecycle-profiler' ); ?></h3>
+		<p><?php esc_html_e( 'Slowest self time first. Self time leaves out inner blocks. Total time includes them.', 'lifecycle-profiler' ); ?></p>
+
+		<table class="widefat striped">
+			<thead>
+				<tr>
+					<th scope="col"><?php esc_html_e( 'Block type', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Self (ms)', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Calls', 'lifecycle-profiler' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $blocks as $block ) : ?>
+					<tr>
+						<td><code><?php echo esc_html( $block['name'] ?? '' ); ?></code></td>
+						<td><strong><?php echo esc_html( number_format_i18n( (float) $block['self_time'], 2 ) ); ?></strong></td>
+						<td><?php echo esc_html( number_format_i18n( (float) ( $block['total_time'] ?? 0 ), 2 ) ); ?></td>
+						<td><?php echo esc_html( number_format_i18n( (int) ( $block['calls'] ?? 0 ) ) ); ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	<?php endif; ?>
+	<?php
+}
+
+/**
+ * Sorts report entries by a time field, slowest first.
+ *
+ * Entries without the field are left out.
+ *
+ * @param array<string, array<string, mixed>> $entries Report entries.
+ * @param string                              $field   Time field, such as "total_time".
+ * @return array<int, array<string, mixed>> Sorted entries.
+ */
+function sort_slowest_first( array $entries, string $field ): array {
+	$entries = array_values(
+		array_filter(
+			$entries,
+			static function ( $entry ) use ( $field ): bool {
+				return is_array( $entry ) && isset( $entry[ $field ] );
+			}
+		)
+	);
+
+	usort(
+		$entries,
+		static function ( array $a, array $b ) use ( $field ): int {
+			return (float) $b[ $field ] <=> (float) $a[ $field ];
+		}
+	);
+
+	return $entries;
 }
 
 /**

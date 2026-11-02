@@ -4,7 +4,7 @@ Lifecycle Profiler is a WordPress plugin that times the whole request. It measur
 
 ## Status
 
-Version 0.1.0 has core profiling. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
+Version 0.2.0 adds template, template part and block times to core profiling. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
 
 ## Usage
 
@@ -19,6 +19,7 @@ The report shows:
 
 - the main phases of the request, from bootstrap to shutdown
 - load time and hook time for each plugin, theme and core
+- the template, each template part and each block type, slowest first
 - custom spans from the timing API
 
 During a session, each response also has a `Server-Timing` header with the phase times. Your browser's developer tools show it in the network panel.
@@ -42,6 +43,7 @@ On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugin
 - A hook callback that takes an argument by reference gets a copy during a session. Changes it makes to an array or scalar argument are lost. Objects are not affected.
 - During a session, each response is buffered in memory until shutdown, so the header can be sent.
 - AJAX, cron and REST requests are not saved as the latest report.
+- Some template files are not timed as template parts, such as the file `comments_template()` loads. See [0002: How to time template parts](docs/decisions/0002-template-part-timing.md).
 
 ## Requirements
 

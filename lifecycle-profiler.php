@@ -5,7 +5,7 @@
  * Description:       Times the whole WordPress request, from bootstrap and plugin load to every hook callback.
  * Requires at least: 6.8
  * Requires PHP:      7.4
- * Version:           0.1.0
+ * Version:           0.2.0
  * Author:            Mukesh Panchal
  * Author URI:        https://github.com/mukeshpanchal27
  * License:           GPL-3.0-or-later
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'LIFECYCLE_PROFILER_VERSION', '0.1.0' );
+define( 'LIFECYCLE_PROFILER_VERSION', '0.2.0' );
 define( 'LIFECYCLE_PROFILER_FILE', __FILE__ );
 define( 'LIFECYCLE_PROFILER_DIR', plugin_dir_path( __FILE__ ) );
 
