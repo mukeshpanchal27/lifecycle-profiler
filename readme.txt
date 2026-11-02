@@ -4,7 +4,7 @@ Tags:              performance, profiler, server-timing, debug, hooks
 Requires at least: 6.8
 Tested up to:      7.1
 Requires PHP:      7.4
-Stable tag:        0.1.0
+Stable tag:        0.2.0
 License:           GPL-3.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -28,6 +28,7 @@ Profiling runs only for administrators who turn it on. Other visitors are never 
 * The main phases of the request, from bootstrap to shutdown.
 * The load time of each mu-plugin and plugin.
 * The time of every hook callback, added up for each plugin, theme and core.
+* The template, each template part and each block type.
 * Custom spans from your own code, through the timing API.
 
 = Timing API =
@@ -49,6 +50,14 @@ The file loads the profiler before regular plugins, so it can time how long each
 WordPress treats a REST request that uses cookies but no nonce as logged out. Send the `X-WP-Nonce` header with the request.
 
 == Changelog ==
+
+= 0.2.0 =
+
+* Time the template that WordPress loads, and name the block template in block themes.
+* Time each template part, as a file in classic themes and as a block in block themes.
+* Time block rendering for each block type, with total and self time.
+* Show templates, template parts and blocks on Tools > Profiler, slowest first.
+* Write the mu-plugin loader on an admin page load when it is missing.
 
 = 0.1.0 =
 
