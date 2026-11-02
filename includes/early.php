@@ -30,9 +30,11 @@ require_once __DIR__ . '/class-phase-timer.php';
 require_once __DIR__ . '/class-timed-callback.php';
 require_once __DIR__ . '/callbacks.php';
 require_once __DIR__ . '/class-hook-timer.php';
+require_once __DIR__ . '/server-timing.php';
 
 if ( LifecycleProfiler\is_session_active() ) {
 	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
 	( new LifecycleProfiler\Phase_Timer() )->register();
 	( new LifecycleProfiler\Hook_Timer() )->register();
+	LifecycleProfiler\start_server_timing();
 }
