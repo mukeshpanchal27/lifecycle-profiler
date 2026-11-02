@@ -9,8 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once __DIR__ . '/session.php';
-
 /*
  * All profiler times use microtime( true ), the same clock as
  * REQUEST_TIME_FLOAT, so durations between them are correct.
@@ -24,3 +22,11 @@ define(
 
 // When the mu-plugin loader ran.
 define( 'LIFECYCLE_PROFILER_LOADER_START', microtime( true ) );
+
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/report.php';
+require_once __DIR__ . '/class-plugin-load-timer.php';
+
+if ( LifecycleProfiler\is_session_active() ) {
+	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
+}

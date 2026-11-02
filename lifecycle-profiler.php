@@ -25,6 +25,7 @@ define( 'LIFECYCLE_PROFILER_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once LIFECYCLE_PROFILER_DIR . 'includes/loader.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/session.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/report.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-bar.php';
 
 register_activation_hook( __FILE__, 'LifecycleProfiler\install_loader' );
