@@ -30,6 +30,7 @@ require_once __DIR__ . '/class-phase-timer.php';
 require_once __DIR__ . '/class-timed-callback.php';
 require_once __DIR__ . '/callbacks.php';
 require_once __DIR__ . '/class-hook-timer.php';
+require_once __DIR__ . '/class-template-timer.php';
 require_once __DIR__ . '/server-timing.php';
 require_once __DIR__ . '/storage.php';
 require_once __DIR__ . '/spans.php';
@@ -41,6 +42,7 @@ if ( LifecycleProfiler\is_session_active() ) {
 	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
 	( new LifecycleProfiler\Phase_Timer() )->register();
 	( new LifecycleProfiler\Hook_Timer() )->register();
+	( new LifecycleProfiler\Template_Timer() )->register();
 	LifecycleProfiler\start_server_timing();
 	add_action( 'shutdown', 'LifecycleProfiler\save_report', PHP_INT_MAX, 0 );
 }
