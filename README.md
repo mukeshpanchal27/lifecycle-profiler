@@ -82,6 +82,15 @@ npm run test:php
 npm run test:php:multisite
 ```
 
+PHPUnit uses the database of the tests site at http://localhost:8889, and it reinstalls WordPress there on every run. Run `npx wp-env clean tests` to get that site back.
+
+The end-to-end tests use Playwright with Chromium, against the development site at http://localhost:8888. They log in as `admin` and turn a profiling session on and off. Set `WP_BASE_URL` to use another site.
+
+```sh
+npx playwright install chromium
+npm run test:e2e
+```
+
 ## License
 
 [GPL-3.0-or-later](LICENSE)

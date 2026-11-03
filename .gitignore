@@ -60,3 +60,7 @@ wp-config.php
 /phpunit.xml
 /phpunit-multisite.xml
 /.phpunit.result.cache
+
+# Playwright
+/test-results/
+/playwright-report/
