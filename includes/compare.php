@@ -87,11 +87,13 @@ function get_comparable_times( array $report ): array {
 /**
  * Puts the times of two reports next to each other.
  *
- * A row that is in only one report has null for the other report.
+ * A row that is in only one report has null for the other report, and its
+ * change counts the missing time as 0. Rows are sorted by the largest change,
+ * faster or slower, except phases, which keep the order of the request.
  *
  * @param array<string, mixed> $base   The report to compare from.
  * @param array<string, mixed> $target The report to compare to.
- * @return array<string, array<string, array{label: string, base: float|null, target: float|null}>>
+ * @return array<string, array<string, array{label: string, base: float|null, target: float|null, change: float}>>
  *         Rows by section and row key.
  */
 function compare_reports( array $base, array $target ): array {
@@ -114,6 +116,16 @@ function compare_reports( array $base, array $target ): array {
 				'label'  => implode( ' → ', $labels ),
 				'base'   => $a ? $a['time'] : null,
 				'target' => $b ? $b['time'] : null,
+				'change' => ( $b ? $b['time'] : 0.0 ) - ( $a ? $a['time'] : 0.0 ),
+			);
+		}
+
+		if ( 'phases' !== $section ) {
+			uasort(
+				$sections[ $section ],
+				static function ( array $x, array $y ): int {
+					return abs( $y['change'] ) <=> abs( $x['change'] );
+				}
 			);
 		}
 	}
