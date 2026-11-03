@@ -48,6 +48,28 @@ On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugin
 - Two profiled requests that end at the same moment can both update the report list. One of the two reports may then be missing from the list.
 - Some template files are not timed as template parts, such as the file `comments_template()` loads. See [0002: How to time template parts](docs/decisions/0002-template-part-timing.md).
 
+## Overhead
+
+Without a session, the plugin adds about 1 ms to a page for visitors. During a session, it adds about 18 ms, or about 40%, because it wraps and times every hook callback.
+
+| Case | Logged out | Administrator |
+| --- | --- | --- |
+| Plugin inactive | 42.6 ms | 44.4 ms |
+| Plugin active, no session | 43.8 ms (+1.2 ms) | 47.8 ms (+3.4 ms) |
+| Plugin active, session | Not possible | 61.9 ms (+17.5 ms) |
+
+Each number is the median response time of `/sample-page/`, averaged over three runs. Each run made 100 requests per case after 10 warm-up requests. The site was the wp-env development site with PHP 7.4, WordPress 7.1.4 and Twenty Twenty-Five, in Docker on macOS.
+
+The results change from run to run by up to about 4 ms. The administrator case without a session showed +0.8 ms to +4.9 ms. The session case gives the most stable result: +16.3 ms to +18.5 ms.
+
+Session times include the profiler's own cost, so a report shows a slightly slower page than the page really is.
+
+To measure your own site, start wp-env and run:
+
+```sh
+bin/measure-overhead.sh /sample-page/ 100
+```
+
 ## Requirements
 
 - PHP 7.4 or later
