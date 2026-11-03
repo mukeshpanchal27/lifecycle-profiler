@@ -4,7 +4,7 @@ Lifecycle Profiler is a WordPress plugin that times the whole request. It measur
 
 ## Status
 
-Version 0.2.0 adds template, template part and block times to core profiling. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
+Version 0.3.0 adds saved reports and report comparison. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
 
 ## Usage
 
@@ -12,6 +12,8 @@ Version 0.2.0 adds template, template part and block times to core profiling. Se
 2. Load the page you want to profile.
 3. Open Tools > Profiler to see the report.
 4. Click "Profiler: ON" to stop.
+
+Each profiled page load saves a report. Tools > Profiler lists the newest 20 reports. You can give each report a label, delete it or download it as JSON. Click **Compare reports** to see two reports side by side, with the change for each row, largest change first.
 
 Only users with the `manage_options` capability can start a session. Other visitors are never profiled.
 
@@ -36,13 +38,14 @@ Outside a profiling session, both functions do nothing, and `lifecycle_profiler_
 
 ## How it works
 
-On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report to the `lifecycle_profiler_latest_report` option.
+On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
 
 ## Limits
 
 - A hook callback that takes an argument by reference gets a copy during a session. Changes it makes to an array or scalar argument are lost. Objects are not affected.
 - During a session, each response is buffered in memory until shutdown, so the header can be sent.
-- AJAX, cron and REST requests are not saved as the latest report.
+- AJAX, cron and REST requests do not save a report.
+- Two profiled requests that end at the same moment can both update the report list. One of the two reports may then be missing from the list.
 - Some template files are not timed as template parts, such as the file `comments_template()` loads. See [0002: How to time template parts](docs/decisions/0002-template-part-timing.md).
 
 ## Requirements

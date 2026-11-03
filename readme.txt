@@ -4,7 +4,7 @@ Tags:              performance, profiler, server-timing, debug, hooks
 Requires at least: 6.8
 Tested up to:      7.1
 Requires PHP:      7.4
-Stable tag:        0.2.0
+Stable tag:        0.3.0
 License:           GPL-3.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -22,6 +22,12 @@ Profiling runs only for administrators who turn it on. Other visitors are never 
 2. Load the page you want to profile.
 3. Open Tools > Profiler to see the report.
 4. Click "Profiler: ON" to stop.
+
+= Saved reports =
+
+Each profiled page load saves a report. Tools > Profiler lists the newest 20 reports. You can give each report a label, delete it or download it as JSON.
+
+Click "Compare reports" to see two reports side by side. Each row shows the change in milliseconds, with the largest change first.
 
 = What it measures =
 
@@ -50,6 +56,14 @@ The file loads the profiler before regular plugins, so it can time how long each
 WordPress treats a REST request that uses cookies but no nonce as logged out. Send the `X-WP-Nonce` header with the request.
 
 == Changelog ==
+
+= 0.3.0 =
+
+* Keep the newest 20 reports, each with a label, instead of only the latest one.
+* Delete a report from the report list.
+* Compare two reports side by side, with the change for each phase, plugin, hook, template part and block.
+* Download a report as a JSON file.
+* Move the report saved by 0.2 into the new report list.
 
 = 0.2.0 =
 
