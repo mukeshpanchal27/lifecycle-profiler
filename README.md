@@ -72,6 +72,16 @@ npx wp-env start --config=.wp-env.excimer.json
 
 This site runs at http://localhost:8890.
 
+### Tests
+
+The PHPUnit tests run in the wp-env tests container with the WordPress core test suite. Start wp-env and install the Composer packages first.
+
+```sh
+composer install
+npm run test:php
+npm run test:php:multisite
+```
+
 ## License
 
 [GPL-3.0-or-later](LICENSE)
