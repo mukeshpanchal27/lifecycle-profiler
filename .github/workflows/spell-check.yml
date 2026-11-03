@@ -1,0 +1,30 @@
+name: Spell check
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+# Cancel earlier runs of the same branch or pull request.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# No permissions by default. The job asks for what it needs.
+permissions: {}
+
+jobs:
+  typos:
+    name: Spell check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Search for misspellings
+        uses: crate-ci/typos@7f9d0819ca1c008ade73f4b41fa9d258d48f605b # v1.51.1
+        with:
+          config: ./.github/typos.toml
