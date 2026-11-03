@@ -132,6 +132,19 @@ function is_session_active(): bool {
 }
 
 /**
+ * Checks whether the request has a session for a confirmed user.
+ *
+ * Code that sends or saves results calls this instead of is_session_active().
+ * Before init, a session is only a valid cookie. A request that ends before
+ * init never confirms the user, so it gets no results.
+ *
+ * @return bool True if init ran and the request has an active session.
+ */
+function is_session_confirmed(): bool {
+	return did_action( 'init' ) && is_session_active();
+}
+
+/**
  * Starts a session for a user by setting the session cookie.
  *
  * @param int $user_id User ID.

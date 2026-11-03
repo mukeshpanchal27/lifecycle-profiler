@@ -42,7 +42,7 @@ const LEGACY_REPORT_OPTION = 'lifecycle_profiler_latest_report';
  * recorded.
  */
 function save_report(): void {
-	if ( ! is_session_active() || ! should_save_report() ) {
+	if ( ! is_session_confirmed() || ! should_save_report() ) {
 		return;
 	}
 
@@ -53,7 +53,8 @@ function save_report(): void {
 	}
 
 	$report['meta'] = array(
-		'url'        => isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
+		// esc_url_raw() keeps percent-encoded characters, which sanitize_text_field() removes.
+		'url'        => isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
 		'method'     => isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '',
 		'time'       => time(),
 		'user_id'    => get_current_user_id(),

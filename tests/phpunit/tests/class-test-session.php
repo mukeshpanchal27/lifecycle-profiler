@@ -12,6 +12,7 @@ use WP_UnitTestCase;
 use function LifecycleProfiler\create_session_token;
 use function LifecycleProfiler\get_session_user_id;
 use function LifecycleProfiler\is_session_active;
+use function LifecycleProfiler\is_session_confirmed;
 use function LifecycleProfiler\parse_session_token;
 use const LifecycleProfiler\SESSION_COOKIE;
 use const LifecycleProfiler\SESSION_SECRET_OPTION;
@@ -23,6 +24,7 @@ use const LifecycleProfiler\SESSION_SECRET_OPTION;
  * @covers ::LifecycleProfiler\parse_session_token
  * @covers ::LifecycleProfiler\get_session_user_id
  * @covers ::LifecycleProfiler\is_session_active
+ * @covers ::LifecycleProfiler\is_session_confirmed
  */
 class Test_Session extends WP_UnitTestCase {
 
@@ -228,6 +230,17 @@ class Test_Session extends WP_UnitTestCase {
 		$this->set_cookie( create_session_token( self::$admin_id, time() + 60 ) );
 
 		$this->assertTrue( $this->before_init( 'LifecycleProfiler\is_session_active' ) );
+	}
+
+	/**
+	 * A confirmed session needs init, so a request that ends before init gets no results.
+	 */
+	public function test_confirmed_session_needs_init() {
+		wp_set_current_user( self::$admin_id );
+		$this->set_cookie( create_session_token( self::$admin_id, time() + 60 ) );
+
+		$this->assertTrue( is_session_confirmed() );
+		$this->assertFalse( $this->before_init( 'LifecycleProfiler\is_session_confirmed' ) );
 	}
 
 	/**

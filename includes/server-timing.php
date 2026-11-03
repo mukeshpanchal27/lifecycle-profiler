@@ -31,7 +31,7 @@ function start_server_timing(): void {
  * Sends the phase times in the Server-Timing header.
  */
 function send_server_timing_header(): void {
-	if ( headers_sent() || ! is_session_active() ) {
+	if ( headers_sent() || ! is_session_confirmed() ) {
 		return;
 	}
 
