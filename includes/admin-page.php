@@ -154,6 +154,7 @@ function render_report_list( array $index, string $current_id ): void {
 						<?php else : ?>
 							<a href="<?php echo esc_url( get_admin_page_url( array( 'report' => $id ) ) ); ?>"><?php esc_html_e( 'View', 'lifecycle-profiler' ); ?></a>
 						<?php endif; ?>
+						| <a href="<?php echo esc_url( get_export_url( $id ) ); ?>"><?php esc_html_e( 'Download JSON', 'lifecycle-profiler' ); ?></a>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline" onsubmit="return window.confirm( '<?php echo esc_js( __( 'Delete this report?', 'lifecycle-profiler' ) ); ?>' );">
 							<input type="hidden" name="action" value="<?php echo esc_attr( DELETE_ACTION ); ?>" />
 							<input type="hidden" name="report" value="<?php echo esc_attr( $id ); ?>" />

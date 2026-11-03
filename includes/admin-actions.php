@@ -25,6 +25,21 @@ const LABEL_ACTION = 'lifecycle_profiler_label';
 const DELETE_ACTION = 'lifecycle_profiler_delete';
 
 /**
+ * Action that downloads a report as JSON.
+ */
+const EXPORT_ACTION = 'lifecycle_profiler_export';
+
+/**
+ * Format name in exported JSON files.
+ */
+const EXPORT_FORMAT = 'lifecycle-profiler-report';
+
+/**
+ * Version of the exported JSON format.
+ */
+const EXPORT_FORMAT_VERSION = 1;
+
+/**
  * Returns the nonce action for one action on one report.
  *
  * @param string $action Action name.
@@ -84,6 +99,52 @@ function handle_delete(): void {
 	exit;
 }
 add_action( 'admin_post_' . DELETE_ACTION, __NAMESPACE__ . '\handle_delete' );
+
+/**
+ * Returns the URL that downloads a report as JSON.
+ *
+ * @param string $id Report ID.
+ * @return string Download URL.
+ */
+function get_export_url( string $id ): string {
+	return wp_nonce_url(
+		add_query_arg(
+			array(
+				'action' => EXPORT_ACTION,
+				'report' => $id,
+			),
+			admin_url( 'admin-post.php' )
+		),
+		get_report_nonce_action( EXPORT_ACTION, $id )
+	);
+}
+
+/**
+ * Sends a report as a JSON file download.
+ */
+function handle_export(): void {
+	$id    = check_report_action( EXPORT_ACTION );
+	$entry = get_report_index()[ $id ];
+
+	$data = array(
+		'format'         => EXPORT_FORMAT,
+		'format_version' => EXPORT_FORMAT_VERSION,
+		'plugin_version' => LIFECYCLE_PROFILER_VERSION,
+		'id'             => $id,
+		'label'          => $entry['label'] ?? '',
+		'report'         => get_saved_report( $id ),
+	);
+
+	$filename = sprintf( 'lifecycle-profiler-%s-%s.json', gmdate( 'Y-m-d-His', (int) ( $entry['time'] ?? 0 ) ), $id );
+
+	nocache_headers();
+	header( 'Content-Type: application/json; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+
+	echo wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+	exit;
+}
+add_action( 'admin_post_' . EXPORT_ACTION, __NAMESPACE__ . '\handle_export' );
 
 /**
  * Stops the profiler's own form actions from saving a report.
