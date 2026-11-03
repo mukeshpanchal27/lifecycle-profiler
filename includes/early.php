@@ -23,6 +23,13 @@ define(
 // When the mu-plugin loader ran.
 define( 'LIFECYCLE_PROFILER_LOADER_START', microtime( true ) );
 
+require_once __DIR__ . '/plugin-state.php';
+
+// The loader can outlive the plugin. Do nothing if the plugin is not active.
+if ( ! LifecycleProfiler\is_plugin_enabled() ) {
+	return;
+}
+
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/report.php';
 require_once __DIR__ . '/class-plugin-load-timer.php';
