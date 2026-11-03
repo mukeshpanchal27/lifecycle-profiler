@@ -48,10 +48,32 @@ function skip_saving_admin_page( $save ) {
 add_filter( 'lifecycle_profiler_save_report', __NAMESPACE__ . '\skip_saving_admin_page' );
 
 /**
+ * Returns the URL of the report screen.
+ *
+ * @param array<string, string> $args Extra query arguments.
+ * @return string Screen URL.
+ */
+function get_admin_page_url( array $args = array() ): string {
+	return add_query_arg( array_merge( array( 'page' => ADMIN_PAGE_SLUG ), $args ), admin_url( 'tools.php' ) );
+}
+
+/**
  * Renders the report screen.
+ *
+ * Shows the saved reports, then the report picked in the "report" query
+ * argument, or the newest report.
  */
 function render_admin_page(): void {
-	$report = get_latest_report();
+	$index = get_report_index();
+
+	// Only reads which report to show.
+	$id = isset( $_GET['report'] ) ? sanitize_key( wp_unslash( $_GET['report'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( ! isset( $index[ $id ] ) ) {
+		$id = (string) get_latest_report_id();
+	}
+
+	$report = '' !== $id ? get_saved_report( $id ) : null;
 	?>
 	<div class="wrap">
 		<h1><?php esc_html_e( 'Lifecycle Profiler', 'lifecycle-profiler' ); ?></h1>
@@ -59,6 +81,8 @@ function render_admin_page(): void {
 		<?php if ( null === $report ) : ?>
 			<p><?php esc_html_e( 'No report yet. Click "Profiler: OFF" in the admin bar to start a session, then load the page you want to profile.', 'lifecycle-profiler' ); ?></p>
 		<?php else : ?>
+			<?php render_report_list( $index, $id ); ?>
+			<h2><?php echo esc_html( get_report_title( $index[ $id ] ) ); ?></h2>
 			<?php render_report_meta( $report['meta'] ?? array() ); ?>
 			<?php render_source_table( get_source_totals( $report ) ); ?>
 			<?php render_phase_table( $report['phases'] ?? array(), (float) ( $report['meta']['total_time'] ?? 0 ) ); ?>
@@ -66,6 +90,56 @@ function render_admin_page(): void {
 			<?php render_span_table( $report['spans'] ?? array() ); ?>
 		<?php endif; ?>
 	</div>
+	<?php
+}
+
+/**
+ * Renders the list of saved reports.
+ *
+ * @param array<string, array<string, mixed>> $index      Index entries, newest first.
+ * @param string                              $current_id ID of the report on screen.
+ */
+function render_report_list( array $index, string $current_id ): void {
+	?>
+	<h2><?php esc_html_e( 'Saved reports', 'lifecycle-profiler' ); ?></h2>
+
+	<table class="widefat striped">
+		<thead>
+			<tr>
+				<th scope="col"><?php esc_html_e( 'Label', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'URL', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Date', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Actions', 'lifecycle-profiler' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach ( $index as $id => $entry ) : ?>
+				<tr>
+					<td>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+							<input type="hidden" name="action" value="<?php echo esc_attr( LABEL_ACTION ); ?>" />
+							<input type="hidden" name="report" value="<?php echo esc_attr( $id ); ?>" />
+							<?php wp_nonce_field( get_report_nonce_action( LABEL_ACTION, $id ) ); ?>
+							<label class="screen-reader-text" for="lifecycle-profiler-label-<?php echo esc_attr( $id ); ?>"><?php esc_html_e( 'Label', 'lifecycle-profiler' ); ?></label>
+							<input type="text" id="lifecycle-profiler-label-<?php echo esc_attr( $id ); ?>" name="label" value="<?php echo esc_attr( $entry['label'] ?? '' ); ?>" placeholder="<?php esc_attr_e( 'No label', 'lifecycle-profiler' ); ?>" />
+							<?php submit_button( __( 'Save label', 'lifecycle-profiler' ), 'small', 'submit', false ); ?>
+						</form>
+					</td>
+					<td><code><?php echo esc_html( trim( ( $entry['method'] ?? '' ) . ' ' . ( $entry['url'] ?? '' ) ) ); ?></code></td>
+					<td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) ( $entry['time'] ?? 0 ) ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (float) ( $entry['total_time'] ?? 0 ), 1 ) ); ?></td>
+					<td>
+						<?php if ( $id === $current_id ) : ?>
+							<strong><?php esc_html_e( 'Showing', 'lifecycle-profiler' ); ?></strong>
+						<?php else : ?>
+							<a href="<?php echo esc_url( get_admin_page_url( array( 'report' => $id ) ) ); ?>"><?php esc_html_e( 'View', 'lifecycle-profiler' ); ?></a>
+						<?php endif; ?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
 	<?php
 }
 
@@ -80,7 +154,7 @@ function render_report_meta( array $meta ): void {
 		<?php
 		printf(
 			/* translators: 1: Request method and URL, 2: Date and time, 3: Total time in milliseconds. */
-			esc_html__( 'Latest report: %1$s, saved %2$s, total %3$s ms.', 'lifecycle-profiler' ),
+			esc_html__( 'Request: %1$s, saved %2$s, total %3$s ms.', 'lifecycle-profiler' ),
 			'<code>' . esc_html( trim( ( $meta['method'] ?? '' ) . ' ' . ( $meta['url'] ?? '' ) ) ) . '</code>',
 			esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) ( $meta['time'] ?? 0 ) ) ),
 			esc_html( number_format_i18n( (float) ( $meta['total_time'] ?? 0 ), 1 ) )
