@@ -32,6 +32,7 @@ require_once LIFECYCLE_PROFILER_DIR . 'includes/spans.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/api.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-bar.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-page.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/admin-actions.php';
 
 register_activation_hook( __FILE__, 'LifecycleProfiler\install_loader' );
 register_deactivation_hook( __FILE__, 'LifecycleProfiler\remove_loader' );

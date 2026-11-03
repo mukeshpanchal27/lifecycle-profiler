@@ -1,0 +1,90 @@
+<?php
+/**
+ * Form actions on saved reports.
+ *
+ * Each action runs through admin-post.php, checks the capability and a nonce
+ * for the report, then goes back to the report screen.
+ *
+ * @package LifecycleProfiler
+ */
+
+namespace LifecycleProfiler;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Action that changes the label of a report.
+ */
+const LABEL_ACTION = 'lifecycle_profiler_label';
+
+/**
+ * Returns the nonce action for one action on one report.
+ *
+ * @param string $action Action name.
+ * @param string $id     Report ID.
+ * @return string Nonce action.
+ */
+function get_report_nonce_action( string $action, string $id ): string {
+	return $action . '_' . $id;
+}
+
+/**
+ * Checks the capability and the nonce of a report action.
+ *
+ * Stops the request if a check fails.
+ *
+ * @param string $action Action name.
+ * @return string ID of a report that exists.
+ */
+function check_report_action( string $action ): string {
+	if ( ! current_user_can( SESSION_CAPABILITY ) ) {
+		wp_die( esc_html__( 'You do not have permission to change profiler reports.', 'lifecycle-profiler' ), 403 );
+	}
+
+	// The nonce check below covers the report ID.
+	$id = isset( $_REQUEST['report'] ) ? sanitize_key( wp_unslash( $_REQUEST['report'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	check_admin_referer( get_report_nonce_action( $action, $id ) );
+
+	if ( ! isset( get_report_index()[ $id ] ) ) {
+		wp_die( esc_html__( 'This report does not exist.', 'lifecycle-profiler' ), 404 );
+	}
+
+	return $id;
+}
+
+/**
+ * Changes the label of a report.
+ */
+function handle_label(): void {
+	$id    = check_report_action( LABEL_ACTION );
+	$label = isset( $_POST['label'] ) ? sanitize_text_field( wp_unslash( $_POST['label'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Checked in check_report_action().
+
+	update_report_label( $id, $label );
+
+	wp_safe_redirect( get_admin_page_url( array( 'report' => $id ) ) );
+	exit;
+}
+add_action( 'admin_post_' . LABEL_ACTION, __NAMESPACE__ . '\handle_label' );
+
+/**
+ * Stops the profiler's own form actions from saving a report.
+ *
+ * @param bool $save Whether to save the report.
+ * @return bool False for a profiler action, otherwise unchanged.
+ */
+function skip_saving_own_actions( $save ) {
+	global $pagenow;
+
+	// Only the action name is read here. Each handler checks its own nonce.
+	$action = isset( $_REQUEST['action'] ) && is_string( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+	if ( 'admin-post.php' === $pagenow && 0 === strpos( $action, 'lifecycle_profiler_' ) ) {
+		return false;
+	}
+
+	return $save;
+}
+add_filter( 'lifecycle_profiler_save_report', __NAMESPACE__ . '\skip_saving_own_actions' );
