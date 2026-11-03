@@ -4,7 +4,7 @@ Lifecycle Profiler is a WordPress plugin that times the whole request. It measur
 
 ## Status
 
-Version 0.3.0 adds saved reports and report comparison. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
+Version 1.0.0 is the first release for wordpress.org. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
 
 ## Usage
 

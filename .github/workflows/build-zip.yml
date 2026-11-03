@@ -1,0 +1,30 @@
+name: Build zip
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zip:
+    name: Build zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build and check the release zip
+        run: bin/build-zip.sh build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lifecycle-profiler
+          path: build/lifecycle-profiler.zip
+          retention-days: 14

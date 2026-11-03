@@ -4,7 +4,7 @@ Tags:              performance, profiler, server-timing, debug, hooks
 Requires at least: 6.8
 Tested up to:      7.1
 Requires PHP:      7.4
-Stable tag:        0.3.0
+Stable tag:        1.0.0
 License:           GPL-3.0-or-later
 License URI:       https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -96,6 +96,17 @@ All plugin options on every site, including every report, and the mu-plugin file
 
 == Changelog ==
 
+= 1.0.0 =
+
+* First release on wordpress.org.
+* Delete all plugin data on uninstall, on every site of a network.
+* Show source types in the site language.
+* Stop profiling when the plugin is inactive but its mu-plugin file is still there.
+* Send the header and save the report only after WordPress confirms the user.
+* Keep percent-encoded characters in report URLs.
+* Label callbacks that cannot be looked up as "Unknown" instead of PHP.
+* Add PHPUnit and end-to-end tests.
+
 = 0.3.0 =
 
 * Keep the newest 20 reports, each with a label, instead of only the latest one.
@@ -127,3 +138,9 @@ All plugin options on every site, including every report, and the mu-plugin file
 = 0.0.1 =
 
 * Initial plugin shell.
+
+== Upgrade Notice ==
+
+= 1.0.0 =
+
+First release on wordpress.org. Saved reports from 0.3 stay in place.

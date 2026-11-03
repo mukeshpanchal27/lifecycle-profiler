@@ -64,3 +64,6 @@ wp-config.php
 # Playwright
 /test-results/
 /playwright-report/
+
+# Release zip
+/build/
