@@ -61,10 +61,17 @@ function get_admin_page_url( array $args = array() ): string {
  * Renders the report screen.
  *
  * Shows the saved reports, then the report picked in the "report" query
- * argument, or the newest report.
+ * argument, or the newest report. With "view=compare", shows the compare
+ * screen instead.
  */
 function render_admin_page(): void {
 	$index = get_report_index();
+
+	// Only reads which screen to show.
+	if ( isset( $_GET['view'] ) && COMPARE_VIEW === $_GET['view'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		render_compare_screen( $index );
+		return;
+	}
 
 	// Only reads which report to show.
 	$id = isset( $_GET['report'] ) ? sanitize_key( wp_unslash( $_GET['report'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -110,6 +117,9 @@ function render_report_list( array $index, string $current_id ): void {
 			esc_html( number_format_i18n( get_max_reports() ) )
 		);
 		?>
+		<?php if ( count( $index ) > 1 ) : ?>
+			<a class="button" href="<?php echo esc_url( get_admin_page_url( array( 'view' => COMPARE_VIEW ) ) ); ?>"><?php esc_html_e( 'Compare reports', 'lifecycle-profiler' ); ?></a>
+		<?php endif; ?>
 	</p>
 
 	<table class="widefat striped">
