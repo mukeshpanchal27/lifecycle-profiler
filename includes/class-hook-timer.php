@@ -108,7 +108,7 @@ final class Hook_Timer {
 					'callback'    => get_callback_name( $timer->get_callback() ),
 					'source_type' => $source['type'],
 					'source_name' => $source['name'],
-					'location'    => $location ? get_relative_path( $location['file'] ) . ':' . $location['line'] : '',
+					'location'    => format_callback_location( $location ),
 					'calls'       => 0,
 					'total_time'  => 0.0,
 					'self_time'   => 0.0,

@@ -68,8 +68,13 @@ function is_own_callback( $callback ): bool {
 /**
  * Returns where a callback is defined.
  *
+ * Some callbacks cannot be looked up, such as the string "parent::method",
+ * which only works inside a class. For those, the file is an empty string, so
+ * they are not mistaken for built-in PHP functions.
+ *
  * @param mixed $callback Callback as stored in WP_Hook.
- * @return array{file: string, line: int}|null File and line, or null for built-in PHP functions and callbacks that cannot be found.
+ * @return array{file: string, line: int}|null File and line, or null for built-in PHP functions.
+ *         The file is empty and the line is 0 if the callback cannot be found.
  */
 function get_callback_location( $callback ): ?array {
 	try {
@@ -84,10 +89,10 @@ function get_callback_location( $callback ): ?array {
 		} elseif ( is_object( $callback ) ) {
 			$reflection = new \ReflectionMethod( $callback, '__invoke' );
 		} else {
-			return null;
+			return get_unknown_location();
 		}
 	} catch ( \ReflectionException $e ) {
-		return null;
+		return get_unknown_location();
 	}
 
 	$file = $reflection->getFileName();
@@ -103,12 +108,39 @@ function get_callback_location( $callback ): ?array {
 }
 
 /**
+ * Returns the location of a callback that cannot be found.
+ *
+ * @return array{file: string, line: int} Empty file and line 0.
+ */
+function get_unknown_location(): array {
+	return array(
+		'file' => '',
+		'line' => 0,
+	);
+}
+
+/**
+ * Returns a callback location as "path:line", relative to ABSPATH.
+ *
+ * @param array{file: string, line: int}|null $location Location from get_callback_location().
+ * @return string Location, or an empty string for built-in PHP functions and unknown callbacks.
+ */
+function format_callback_location( ?array $location ): string {
+	if ( null === $location || '' === $location['file'] ) {
+		return '';
+	}
+
+	return get_relative_path( $location['file'] ) . ':' . $location['line'];
+}
+
+/**
  * Returns the source of a file: a plugin, theme, core, and so on.
  *
  * More specific folders are checked first, because the plugin, mu-plugin and
  * theme folders are all inside wp-content.
  *
- * @param string|null $file Normalized file path, or null for built-in PHP functions.
+ * @param string|null $file Normalized file path, null for built-in PHP functions,
+ *                          or an empty string if the file is not known.
  * @return array{type: string, name: string} Source type and name. The type is
  *         one of "mu-plugin", "plugin", "theme", "dropin", "core", "php" or "other".
  */
@@ -119,6 +151,13 @@ function get_file_source( ?string $file ): array {
 		return array(
 			'type' => 'php',
 			'name' => 'PHP',
+		);
+	}
+
+	if ( '' === $file ) {
+		return array(
+			'type' => 'other',
+			'name' => 'Unknown',
 		);
 	}
 
@@ -140,9 +179,12 @@ function get_file_source( ?string $file ): array {
 
 			if ( 0 === strpos( $file, $path ) ) {
 				// The first folder or file name inside the folder, such as "akismet" or "hello.php".
+				$name = strtok( substr( $file, strlen( $path ) ), '/' );
+
 				$source = array(
 					'type' => $type,
-					'name' => strtok( substr( $file, strlen( $path ) ), '/' ),
+					// strtok() returns false when nothing follows the folder.
+					'name' => false === $name ? '' : $name,
 				);
 				break 2;
 			}
