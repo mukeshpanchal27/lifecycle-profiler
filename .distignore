@@ -1,0 +1,26 @@
+# Files that are not part of the released plugin.
+# The deploy and zip workflows pass this file to rsync --exclude-from.
+/.git
+/.github
+/.wordpress-org
+/.distignore
+/.gitignore
+/.wp-env*.json
+/.phpunit.result.cache
+/bin
+/docs
+/node_modules
+/playwright-report
+/test-results
+/tests
+/vendor
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/phpcs.xml.dist
+/phpcs-report.xml
+/phpunit.xml.dist
+/phpunit-multisite.xml.dist
+/playwright.config.js
+/README.md
