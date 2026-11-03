@@ -175,6 +175,7 @@ function render_compare_table( string $title, array $rows ): void {
 				<th scope="col"><?php esc_html_e( 'Name', 'lifecycle-profiler' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Report A (ms)', 'lifecycle-profiler' ); ?></th>
 				<th scope="col"><?php esc_html_e( 'Report B (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Change (ms)', 'lifecycle-profiler' ); ?></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -183,11 +184,40 @@ function render_compare_table( string $title, array $rows ): void {
 					<td><code><?php echo esc_html( $row['label'] ); ?></code></td>
 					<td><?php echo esc_html( format_compare_time( $row['base'] ) ); ?></td>
 					<td><?php echo esc_html( format_compare_time( $row['target'] ) ); ?></td>
+					<td><?php render_compare_change( $row ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 		</tbody>
 	</table>
 	<?php
+}
+
+/**
+ * Renders the change of one row, with the percentage when report A has a time.
+ *
+ * Slower is red and faster is green. A change under 0.01 ms shows as 0.
+ *
+ * @param array{label: string, base: float|null, target: float|null, change: float} $row Row from compare_reports().
+ */
+function render_compare_change( array $row ): void {
+	$change = round( $row['change'], 2 );
+
+	if ( 0.0 === $change ) {
+		echo esc_html( number_format_i18n( 0, 2 ) );
+		return;
+	}
+
+	$text = ( $change > 0 ? '+' : '−' ) . number_format_i18n( abs( $change ), 2 );
+
+	if ( null !== $row['base'] && null !== $row['target'] && $row['base'] > 0 ) {
+		$text .= ' (' . ( $change > 0 ? '+' : '−' ) . number_format_i18n( 100 * abs( $change ) / $row['base'], 1 ) . '%)';
+	}
+
+	printf(
+		'<span style="color:%1$s">%2$s</span>',
+		esc_attr( $change > 0 ? '#b32d2e' : '#007017' ),
+		esc_html( $text )
+	);
 }
 
 /**
