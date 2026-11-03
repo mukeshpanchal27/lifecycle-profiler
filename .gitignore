@@ -55,3 +55,8 @@ wp-config.php
 
 # Node
 /node_modules/
+
+# PHPUnit
+/phpunit.xml
+/phpunit-multisite.xml
+/.phpunit.result.cache

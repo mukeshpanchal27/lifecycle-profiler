@@ -1,0 +1,47 @@
+name: PHPUnit
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpunit:
+    name: ${{ matrix.multisite && 'PHPUnit multisite' || 'PHPUnit' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        multisite: [ false, true ]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Install npm packages
+        run: npm ci
+
+      - name: Start wp-env
+        run: npx wp-env start
+
+      - name: Run PHPUnit
+        run: npm run ${{ matrix.multisite && 'test:php:multisite' || 'test:php' }}

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="tests/phpunit/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertDeprecationsToExceptions="true"
+	>
+	<testsuites>
+		<testsuite name="Lifecycle Profiler">
+			<directory prefix="class-test-" suffix=".php">./tests/phpunit/tests/</directory>
+		</testsuite>
+	</testsuites>
+	<groups>
+		<exclude>
+			<group>ms-required</group>
+		</exclude>
+	</groups>
+</phpunit>

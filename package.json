@@ -4,7 +4,9 @@
 	"description": "Times the whole WordPress request, from bootstrap and plugin load to every hook callback.",
 	"license": "GPL-3.0-or-later",
 	"scripts": {
-		"wp-env": "wp-env"
+		"wp-env": "wp-env",
+		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/lifecycle-profiler vendor/bin/phpunit",
+		"test:php:multisite": "wp-env run tests-cli --env-cwd=wp-content/plugins/lifecycle-profiler vendor/bin/phpunit -c phpunit-multisite.xml.dist"
 	},
 	"devDependencies": {
 		"@wordpress/env": "12.0.0"
