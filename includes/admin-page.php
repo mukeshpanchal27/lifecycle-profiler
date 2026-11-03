@@ -390,7 +390,16 @@ function render_source_table( array $rows ): void {
 				<tr>
 					<td>
 						<strong><?php echo esc_html( get_source_label( $row['type'], $row['name'] ) ); ?></strong><br />
-						<span class="description"><?php echo esc_html( $row['type'] . ': ' . $row['name'] ); ?></span>
+						<span class="description">
+							<?php
+							printf(
+								/* translators: 1: Source type, such as "Plugin". 2: Folder or file name. */
+								esc_html__( '%1$s: %2$s', 'lifecycle-profiler' ),
+								esc_html( get_source_type_label( $row['type'] ) ),
+								esc_html( $row['name'] )
+							);
+							?>
+						</span>
 					</td>
 					<td><?php echo esc_html( number_format_i18n( (float) $row['load_time'], 2 ) ); ?></td>
 					<td><?php echo esc_html( number_format_i18n( (float) $row['hook_time'], 2 ) ); ?></td>
@@ -437,7 +446,32 @@ function get_source_label( string $type, string $name ): string {
 		}
 	}
 
+	// Reports store this name in English, so it is translated only for display.
+	if ( 'other' === $type && 'Unknown' === $name ) {
+		return __( 'Unknown', 'lifecycle-profiler' );
+	}
+
 	return $name;
+}
+
+/**
+ * Returns a display name for a source type.
+ *
+ * @param string $type Source type, such as "mu-plugin".
+ * @return string Translated type name, or the type itself if it is not known.
+ */
+function get_source_type_label( string $type ): string {
+	$labels = array(
+		'mu-plugin' => __( 'Must-use plugin', 'lifecycle-profiler' ),
+		'plugin'    => __( 'Plugin', 'lifecycle-profiler' ),
+		'theme'     => __( 'Theme', 'lifecycle-profiler' ),
+		'dropin'    => __( 'Drop-in', 'lifecycle-profiler' ),
+		'core'      => __( 'Core', 'lifecycle-profiler' ),
+		'php'       => __( 'PHP', 'lifecycle-profiler' ),
+		'other'     => __( 'Other', 'lifecycle-profiler' ),
+	);
+
+	return $labels[ $type ] ?? $type;
 }
 
 /**
