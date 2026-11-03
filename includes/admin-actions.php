@@ -139,6 +139,7 @@ function handle_export(): void {
 
 	nocache_headers();
 	header( 'Content-Type: application/json; charset=utf-8' );
+	header( 'X-Content-Type-Options: nosniff' );
 	header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
 
 	echo wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
