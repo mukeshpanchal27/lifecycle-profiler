@@ -18,12 +18,12 @@ jobs:
     name: Build zip
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Build and check the release zip
         run: bin/build-zip.sh build
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: lifecycle-profiler
           path: build/lifecycle-profiler.zip
