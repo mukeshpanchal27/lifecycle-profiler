@@ -7,7 +7,8 @@
 		"wp-env": "wp-env",
 		"test:php": "wp-env run tests-cli --env-cwd=wp-content/plugins/lifecycle-profiler vendor/bin/phpunit",
 		"test:php:multisite": "wp-env run tests-cli --env-cwd=wp-content/plugins/lifecycle-profiler vendor/bin/phpunit -c phpunit-multisite.xml.dist",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"assets:wordpress-org": "node bin/make-wordpress-org-assets.js"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.64.1",

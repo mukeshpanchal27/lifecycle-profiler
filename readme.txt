@@ -39,11 +39,23 @@ Click "Compare reports" to see two reports side by side. Each row shows the chan
 
 = Timing API =
 
+Time your own code with two functions:
+
     lifecycle_profiler_start( 'my-plugin: build menu' );
     build_menu();
-    lifecycle_profiler_stop( 'my-plugin: build menu' );
+    $ms = lifecycle_profiler_stop( 'my-plugin: build menu' );
 
-Outside a profiling session, these functions do nothing.
+Outside a profiling session, both functions do nothing, and `lifecycle_profiler_stop()` returns `null`. The report shows each span with its total time and number of calls.
+
+= Privacy =
+
+The plugin sends no data to any other site. Reports stay in your database, in options with autoload off. A report holds the URL of the profiled request and the ID of the user who profiled it. Deleting the plugin deletes all its data.
+
+== Installation ==
+
+1. Install the plugin from the Plugins screen, or upload the `lifecycle-profiler` folder to `wp-content/plugins/`.
+2. Activate the plugin.
+3. On activation, the plugin writes the file `0-lifecycle-profiler-loader.php` to `wp-content/mu-plugins/`. If WordPress cannot write there, an admin notice says so. Make the folder writable, then load any admin page. The plugin tries again once an hour.
 
 == Frequently Asked Questions ==
 
@@ -51,9 +63,36 @@ Outside a profiling session, these functions do nothing.
 
 The file loads the profiler before regular plugins, so it can time how long each plugin takes to load. The plugin adds the file on activation and removes it on deactivation.
 
+= Does the plugin slow down my site? =
+
+Without a session, it adds about 1 ms to a page. During a session, it adds about 18 ms, or about 40%, because it times every hook callback. Only the administrator who started the session pays that cost, and only for one hour.
+
+= Are the times exact? =
+
+The times include the profiler's own cost, so a profiled page looks slightly slower than it is. Compare reports made the same way. The difference between two reports is more useful than one number.
+
+= Who can start a session? =
+
+Users with the `manage_options` capability, usually administrators. Other visitors are never profiled. On multisite, site administrators can profile their own site.
+
 = Why does a REST request have no Server-Timing header? =
 
 WordPress treats a REST request that uses cookies but no nonce as logged out. Send the `X-WP-Nonce` header with the request.
+
+= Which requests save a report? =
+
+Every page load during a session, except AJAX, cron and REST requests, and the plugin's own screen and actions. The plugin keeps the newest 20 reports. Change the number with the `lifecycle_profiler_max_reports` filter.
+
+= What does uninstall remove? =
+
+All plugin options on every site, including every report, and the mu-plugin file.
+
+== Screenshots ==
+
+1. Tools > Profiler lists the saved reports, then the time of each plugin, theme and core in the chosen report.
+2. The template, the template parts and the time of each block type.
+3. The compare screen shows the change between two reports, with the largest change first.
+4. The admin bar item starts and stops a profiling session.
 
 == Changelog ==
 
