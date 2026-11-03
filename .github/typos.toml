@@ -1,0 +1,10 @@
+[files]
+# Lock files hold hashes and package names, not prose.
+extend-exclude = [
+	"composer.lock",
+	"package-lock.json",
+]
+
+[default.extend-words]
+# Don't correct the abbreviated "duration" in Server-Timing metrics.
+dur = "dur"
