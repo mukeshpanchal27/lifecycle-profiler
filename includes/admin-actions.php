@@ -20,6 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 const LABEL_ACTION = 'lifecycle_profiler_label';
 
 /**
+ * Action that deletes a report.
+ */
+const DELETE_ACTION = 'lifecycle_profiler_delete';
+
+/**
  * Returns the nonce action for one action on one report.
  *
  * @param string $action Action name.
@@ -68,6 +73,17 @@ function handle_label(): void {
 	exit;
 }
 add_action( 'admin_post_' . LABEL_ACTION, __NAMESPACE__ . '\handle_label' );
+
+/**
+ * Deletes a report.
+ */
+function handle_delete(): void {
+	delete_saved_report( check_report_action( DELETE_ACTION ) );
+
+	wp_safe_redirect( get_admin_page_url() );
+	exit;
+}
+add_action( 'admin_post_' . DELETE_ACTION, __NAMESPACE__ . '\handle_delete' );
 
 /**
  * Stops the profiler's own form actions from saving a report.

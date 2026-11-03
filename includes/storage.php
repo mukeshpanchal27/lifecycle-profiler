@@ -26,6 +26,11 @@ const REPORT_INDEX_OPTION = 'lifecycle_profiler_reports';
 const REPORT_OPTION_PREFIX = 'lifecycle_profiler_report_';
 
 /**
+ * How many reports to keep by default.
+ */
+const DEFAULT_MAX_REPORTS = 20;
+
+/**
  * Option that stored the only report in version 0.2 and earlier.
  */
 const LEGACY_REPORT_OPTION = 'lifecycle_profiler_latest_report';
@@ -104,8 +109,55 @@ function add_saved_report( array $report, float $time ): string {
 	);
 
 	update_report_index( $index );
+	delete_old_reports();
 
 	return $id;
+}
+
+/**
+ * Returns how many reports to keep.
+ *
+ * @return int Number of reports, at least 1.
+ */
+function get_max_reports(): int {
+	/**
+	 * Filters how many reports to keep. When a new report goes over the limit,
+	 * the oldest reports are deleted.
+	 *
+	 * @param int $max Number of reports. Default 20.
+	 */
+	return max( 1, (int) apply_filters( 'lifecycle_profiler_max_reports', DEFAULT_MAX_REPORTS ) );
+}
+
+/**
+ * Deletes the oldest reports when there are more than the limit.
+ */
+function delete_old_reports(): void {
+	$ids = array_keys( get_report_index() );
+
+	foreach ( array_slice( $ids, get_max_reports() ) as $id ) {
+		delete_saved_report( (string) $id );
+	}
+}
+
+/**
+ * Deletes a saved report and removes it from the index.
+ *
+ * @param string $id Report ID.
+ * @return bool True if the report was in the index.
+ */
+function delete_saved_report( string $id ): bool {
+	$index = get_report_index();
+
+	if ( ! isset( $index[ $id ] ) ) {
+		return false;
+	}
+
+	unset( $index[ $id ] );
+	update_report_index( $index );
+	delete_option( REPORT_OPTION_PREFIX . $id );
+
+	return true;
 }
 
 /**
