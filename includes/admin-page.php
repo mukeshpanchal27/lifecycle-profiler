@@ -102,6 +102,15 @@ function render_admin_page(): void {
 function render_report_list( array $index, string $current_id ): void {
 	?>
 	<h2><?php esc_html_e( 'Saved reports', 'lifecycle-profiler' ); ?></h2>
+	<p>
+		<?php
+		printf(
+			/* translators: %s: Number of reports. */
+			esc_html__( 'The profiler keeps the newest %s reports and deletes older ones.', 'lifecycle-profiler' ),
+			esc_html( number_format_i18n( get_max_reports() ) )
+		);
+		?>
+	</p>
 
 	<table class="widefat striped">
 		<thead>
@@ -135,6 +144,12 @@ function render_report_list( array $index, string $current_id ): void {
 						<?php else : ?>
 							<a href="<?php echo esc_url( get_admin_page_url( array( 'report' => $id ) ) ); ?>"><?php esc_html_e( 'View', 'lifecycle-profiler' ); ?></a>
 						<?php endif; ?>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline" onsubmit="return window.confirm( '<?php echo esc_js( __( 'Delete this report?', 'lifecycle-profiler' ) ); ?>' );">
+							<input type="hidden" name="action" value="<?php echo esc_attr( DELETE_ACTION ); ?>" />
+							<input type="hidden" name="report" value="<?php echo esc_attr( $id ); ?>" />
+							<?php wp_nonce_field( get_report_nonce_action( DELETE_ACTION, $id ) ); ?>
+							<?php submit_button( __( 'Delete', 'lifecycle-profiler' ), 'small link-delete', 'submit', false ); ?>
+						</form>
 					</td>
 				</tr>
 			<?php endforeach; ?>
