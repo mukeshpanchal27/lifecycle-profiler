@@ -163,6 +163,9 @@ See [docs/releasing.md](docs/releasing.md). In short:
 
 ## Documentation
 
+- [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md): how to report a security problem privately
+- [Code of conduct](CODE_OF_CONDUCT.md)
 - [0001: Plugin name, slug, prefix and minimum versions](docs/decisions/0001-naming.md)
 - [0002: How to time template parts](docs/decisions/0002-template-part-timing.md)
 - [Security review](docs/security-review.md)

@@ -1,9 +1,13 @@
 /**
- * Makes the wordpress.org banners, icons and screenshots in .wordpress-org/.
+ * Makes the wordpress.org banners, icons and screenshots in .wordpress-org/,
+ * and the GitHub social preview image in .github/.
  *
- * Banners and icons come from the HTML files in bin/assets/. Screenshots come
- * from the wp-env development site, which must be running and have at least
- * two saved reports.
+ * Banners, icons and the social preview come from the HTML files in bin/assets/.
+ * The social preview is not in .wordpress-org/, because the deploy copies
+ * that folder to wordpress.org.
+ *
+ * Screenshots come from the wp-env development site, which must be running
+ * and have at least two saved reports.
  *
  * Usage: node bin/make-wordpress-org-assets.js [--skip-screenshots]
  */
@@ -20,14 +24,14 @@ const site = process.env.WP_BASE_URL || 'http://localhost:8888';
  * @param {import('@playwright/test').Browser} browser Browser.
  * @param {string} file HTML file in bin/assets/.
  * @param {{width: number, height: number}} size CSS size of the page.
- * @param {Array<{name: string, scale: number}>} outputs File names and pixel ratios.
+ * @param {Array<{name: string, scale: number, dir?: string}>} outputs File names, pixel ratios and optional output folders.
  */
 async function render( browser, file, size, outputs ) {
 	for ( const output of outputs ) {
 		const page = await browser.newPage( { viewport: size, deviceScaleFactor: output.scale } );
 
 		await page.goto( 'file://' + path.join( __dirname, 'assets', file ) );
-		await page.screenshot( { path: path.join( out, output.name ) } );
+		await page.screenshot( { path: path.join( output.dir || out, output.name ) } );
 		await page.close();
 	}
 }
@@ -82,6 +86,10 @@ async function screenshots( browser ) {
 	await render( browser, 'icon.html', { width: 256, height: 256 }, [
 		{ name: 'icon-256x256.png', scale: 1 },
 		{ name: 'icon-128x128.png', scale: 0.5 },
+	] );
+
+	await render( browser, 'social-preview.html', { width: 1280, height: 640 }, [
+		{ name: 'social-preview.png', scale: 1, dir: path.join( root, '.github' ) },
 	] );
 
 	if ( ! process.argv.includes( '--skip-screenshots' ) ) {
