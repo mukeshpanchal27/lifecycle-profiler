@@ -21,10 +21,10 @@ WARMUP=10
 SITE="http://localhost:8888"
 PLUGIN="lifecycle-profiler"
 JAR="$(mktemp)"
-trap 'rm -f "$JAR"; npx wp-env run cli wp plugin activate "$PLUGIN" >/dev/null 2>&1 || true' EXIT
+trap 'rm -f "$JAR"; npm exec --no -- wp-env run cli wp plugin activate "$PLUGIN" >/dev/null 2>&1 || true' EXIT
 
 wp() {
-	npx wp-env run cli wp "$@" 2>/dev/null
+	npm exec --no -- wp-env run cli wp "$@" 2>/dev/null
 }
 
 # Prints the median and the 90th percentile of REQUESTS page loads.
