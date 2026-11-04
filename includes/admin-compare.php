@@ -63,7 +63,15 @@ function render_compare_screen( array $index ): void {
 		<p><a href="<?php echo esc_url( get_admin_page_url() ); ?>"><?php esc_html_e( '&larr; Back to reports', 'lifecycle-profiler' ); ?></a></p>
 
 		<?php if ( null === $base || null === $target ) : ?>
-			<p><?php esc_html_e( 'Save at least two reports to compare them.', 'lifecycle-profiler' ); ?></p>
+			<?php
+			wp_admin_notice(
+				esc_html__( 'Save at least two reports to compare them.', 'lifecycle-profiler' ),
+				array(
+					'type'               => 'info',
+					'additional_classes' => array( 'inline' ),
+				)
+			);
+			?>
 		</div>
 			<?php
 			return;

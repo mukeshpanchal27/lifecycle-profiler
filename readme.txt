@@ -101,6 +101,7 @@ All plugin options on every site, including every report, and the mu-plugin file
 * First release on wordpress.org.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
+* Show an info notice when there are no reports, or too few to compare.
 * Stop profiling when the plugin is inactive but its mu-plugin file is still there.
 * Send the header and save the report only after WordPress confirms the user.
 * Keep percent-encoded characters in report URLs.

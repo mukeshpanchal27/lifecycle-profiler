@@ -86,7 +86,16 @@ function render_admin_page(): void {
 		<h1><?php esc_html_e( 'Lifecycle Profiler', 'lifecycle-profiler' ); ?></h1>
 
 		<?php if ( null === $report ) : ?>
-			<p><?php esc_html_e( 'No report yet. Click "Profiler: OFF" in the admin bar to start a session, then load the page you want to profile.', 'lifecycle-profiler' ); ?></p>
+			<?php
+			wp_admin_notice(
+				esc_html__( 'No report yet. Click "Profiler: OFF" in the admin bar to start a session, then load the page you want to profile.', 'lifecycle-profiler' ),
+				array(
+					'type'               => 'info',
+					// Inline keeps the notice in place, so WordPress does not move it above the heading.
+					'additional_classes' => array( 'inline' ),
+				)
+			);
+			?>
 		<?php else : ?>
 			<?php render_report_list( $index, $id ); ?>
 			<h2><?php echo esc_html( get_report_title( $index[ $id ] ) ); ?></h2>
