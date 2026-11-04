@@ -122,7 +122,7 @@ function render_report_list( array $index, string $current_id ): void {
 		<?php
 		printf(
 			/* translators: %s: Number of reports. */
-			esc_html__( 'The profiler keeps the newest %s reports and deletes older ones.', 'lifecycle-profiler' ),
+			esc_html( _n( 'The profiler keeps the newest %s report and deletes older ones.', 'The profiler keeps the newest %s reports and deletes older ones.', get_max_reports(), 'lifecycle-profiler' ) ),
 			esc_html( number_format_i18n( get_max_reports() ) )
 		);
 		?>

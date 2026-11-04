@@ -51,6 +51,10 @@ function get_loader_contents(): string {
  * @package LifecycleProfiler
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 $lifecycle_profiler_early_file = WP_PLUGIN_DIR . '/' . __EARLY_FILE__;
 if ( is_readable( $lifecycle_profiler_early_file ) ) {
 	require_once $lifecycle_profiler_early_file;
@@ -110,19 +114,30 @@ function is_loader_installed(): bool {
 }
 
 /**
+ * Checks whether the loader file has the contents this version writes.
+ *
+ * @return bool True if the loader file exists and is up to date.
+ */
+function is_loader_current(): bool {
+	// A local file in mu-plugins, so no remote request is involved.
+	return is_loader_installed() && get_loader_contents() === file_get_contents( get_loader_path() ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+}
+
+/**
  * Transient that pauses new write attempts after a failed one.
  */
 const LOADER_RETRY_TRANSIENT = 'lifecycle_profiler_loader_retry';
 
 /**
- * Writes the loader file when it is missing.
+ * Writes the loader file when it is missing or out of date.
  *
  * The activation hook does not run when a site updates the plugin without
- * deactivating it, so the loader may never have been written. After a failed
- * write, this function waits an hour before it tries again.
+ * deactivating it. So the loader may never have been written, or it may be
+ * from an older version. After a failed write, this function waits an hour
+ * before it tries again.
  */
 function maybe_install_loader(): void {
-	if ( is_loader_installed() || ! current_user_can( 'activate_plugins' ) || get_transient( LOADER_RETRY_TRANSIENT ) ) {
+	if ( is_loader_current() || ! current_user_can( 'activate_plugins' ) || get_transient( LOADER_RETRY_TRANSIENT ) ) {
 		return;
 	}
 
