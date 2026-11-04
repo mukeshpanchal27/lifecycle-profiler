@@ -1,0 +1,38 @@
+name: Plugin Check
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# No permissions by default. The job asks for what it needs.
+permissions: {}
+
+jobs:
+  plugin-check:
+    name: Plugin Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # Lets the Action post its results as a pull request comment.
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # Check the release files, the same files that wordpress.org receives.
+      - name: Build the release files
+        run: |
+          bin/build-zip.sh build
+          unzip -q build/lifecycle-profiler.zip -d build/release
+
+      - name: Run Plugin Check
+        uses: wordpress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+        with:
+          build-dir: ./build/release/lifecycle-profiler
+          slug: lifecycle-profiler
