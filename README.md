@@ -4,7 +4,7 @@ Lifecycle Profiler is a WordPress plugin that times the whole request. It measur
 
 ## Status
 
-Version 1.0.0 is the first release for wordpress.org. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
+Version 1.0.0 is ready for wordpress.org, but it is not submitted yet. See the [milestones](https://github.com/mukeshpanchal27/lifecycle-profiler/milestones) for the roadmap.
 
 ## Usage
 
@@ -40,12 +40,20 @@ Outside a profiling session, both functions do nothing, and `lifecycle_profiler_
 
 On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
 
+## Data and uninstall
+
+The plugin sends no data to any other site. A report holds the URL of the profiled request, the ID of the user who profiled it, and the times. Reports stay in the database, in options with autoload off.
+
+Deleting the plugin removes every option that starts with `lifecycle_profiler_`, on every site of a network, and the loader file in `mu-plugins/`.
+
 ## Limits
 
 - A hook callback that takes an argument by reference gets a copy during a session. Changes it makes to an array or scalar argument are lost. Objects are not affected.
 - During a session, each response is buffered in memory until shutdown, so the header can be sent.
 - AJAX, cron and REST requests do not save a report.
 - Two profiled requests that end at the same moment can both update the report list. One of the two reports may then be missing from the list.
+- A request that ends before `init` sends no header and saves no report, because the profiler cannot confirm the user yet.
+- On multisite, every site administrator can profile their own site. The report then shows the network plugins' callbacks, file paths and times.
 - Some template files are not timed as template parts, such as the file `comments_template()` loads. See [0002: How to time template parts](docs/decisions/0002-template-part-timing.md).
 
 ## Overhead
@@ -82,9 +90,12 @@ You need Node.js and Docker.
 Run the tools with `npm exec --no --`, not `npx`. `npx` downloads a package that is not installed and runs its install scripts. `npm exec --no --` runs only the packages in `package-lock.json`, and fails if one is missing.
 
 ```sh
-npm install
+npm ci
+composer install
 npm exec --no -- wp-env start
 ```
+
+`npm ci` installs exactly the versions in `package-lock.json`.
 
 The site runs at http://localhost:8888 with the plugin active. Log in with `admin` and `password`.
 
@@ -95,6 +106,17 @@ npm exec --no -- wp-env start --config=.wp-env.excimer.json
 ```
 
 This site runs at http://localhost:8890.
+
+### Coding standards
+
+PHPCS checks the code against the WordPress coding standards and PHP 7.4 compatibility. The rules are in `phpcs.xml.dist`.
+
+```sh
+composer lint
+composer format
+```
+
+`composer format` fixes what PHPCBF can fix by itself.
 
 ### Tests
 
@@ -114,6 +136,37 @@ The end-to-end tests use Playwright with Chromium, against the development site 
 npm exec --no -- playwright install chromium
 npm run test:e2e
 ```
+
+## Continuous integration
+
+GitHub Actions runs these checks on every pull request and on trunk:
+
+| Workflow | What it checks |
+| --- | --- |
+| PHP lint | Syntax on PHP 7.4 to 8.5 |
+| Coding standards | PHPCS |
+| PHPUnit | The PHPUnit tests, as a single site and as a multisite |
+| End-to-end tests | The Playwright tests |
+| Plugin Check | The release files, with the official [Plugin Check](https://github.com/wordpress/plugin-check-action) tool. It posts its results on the pull request. |
+| Spell check | Misspellings, with [typos](https://github.com/crate-ci/typos). Allowed words are in `.github/typos.toml`. |
+| Build zip | Builds the release zip and checks its files |
+
+Every action is pinned to a full commit hash, with the exact tag name in a comment, for example `actions/checkout@3d3c42e5… # v7.0.1`. A tag can move to other code, but a hash cannot. Dependabot proposes updates for actions, Composer and npm every Monday. It waits two weeks after a Composer or npm release.
+
+## Releasing
+
+See [docs/releasing.md](docs/releasing.md). In short:
+
+- `bin/build-zip.sh` builds `build/lifecycle-profiler.zip` from the files that `.distignore` does not exclude.
+- `npm run assets:wordpress-org` makes the banners, icons and screenshots in `.wordpress-org/`.
+- Pushing a version tag such as `v1.0.0` deploys the release to wordpress.org.
+
+## Documentation
+
+- [0001: Plugin name, slug, prefix and minimum versions](docs/decisions/0001-naming.md)
+- [0002: How to time template parts](docs/decisions/0002-template-part-timing.md)
+- [Security review](docs/security-review.md)
+- [Releasing](docs/releasing.md)
 
 ## License
 
