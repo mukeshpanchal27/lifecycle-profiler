@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      # Lets the Action post its results as a pull request comment.
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
