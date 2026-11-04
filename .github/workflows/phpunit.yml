@@ -41,7 +41,7 @@ jobs:
         run: npm ci
 
       - name: Start wp-env
-        run: npx wp-env start
+        run: npm exec --no -- wp-env start
 
       - name: Run PHPUnit
         run: npm run ${{ matrix.multisite && 'test:php:multisite' || 'test:php' }}

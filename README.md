@@ -79,9 +79,11 @@ bin/measure-overhead.sh /sample-page/ 100
 
 You need Node.js and Docker.
 
+Run the tools with `npm exec --no --`, not `npx`. `npx` downloads a package that is not installed and runs its install scripts. `npm exec --no --` runs only the packages in `package-lock.json`, and fails if one is missing.
+
 ```sh
 npm install
-npx wp-env start
+npm exec --no -- wp-env start
 ```
 
 The site runs at http://localhost:8888 with the plugin active. Log in with `admin` and `password`.
@@ -89,7 +91,7 @@ The site runs at http://localhost:8888 with the plugin active. Log in with `admi
 A second site has the [Excimer](https://www.mediawiki.org/wiki/Excimer) PHP extension installed, for testing flame graphs:
 
 ```sh
-npx wp-env start --config=.wp-env.excimer.json
+npm exec --no -- wp-env start --config=.wp-env.excimer.json
 ```
 
 This site runs at http://localhost:8890.
@@ -104,12 +106,12 @@ npm run test:php
 npm run test:php:multisite
 ```
 
-PHPUnit uses the database of the tests site at http://localhost:8889, and it reinstalls WordPress there on every run. Run `npx wp-env clean tests` to get that site back.
+PHPUnit uses the database of the tests site at http://localhost:8889, and it reinstalls WordPress there on every run. Run `npm exec --no -- wp-env clean tests` to get that site back.
 
 The end-to-end tests use Playwright with Chromium, against the development site at http://localhost:8888. They log in as `admin` and turn a profiling session on and off. Set `WP_BASE_URL` to use another site.
 
 ```sh
-npx playwright install chromium
+npm exec --no -- playwright install chromium
 npm run test:e2e
 ```
 
