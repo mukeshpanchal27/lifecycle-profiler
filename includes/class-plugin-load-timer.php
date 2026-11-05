@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Plugin_Load_Timer {
 
 	/**
-	 * When the previous plugin finished loading, from microtime( true ).
+	 * When the previous plugin finished loading, from Clock::now().
 	 *
 	 * @var float
 	 */
@@ -48,7 +48,7 @@ final class Plugin_Load_Timer {
 	 * Adds the hooks. Call this from the mu-plugin loader.
 	 */
 	public function register(): void {
-		$this->last = microtime( true );
+		$this->last = Clock::now();
 
 		add_action( 'mu_plugin_loaded', array( $this, 'record_mu_plugin' ) );
 		add_filter( 'site_option_active_sitewide_plugins', array( $this, 'mark_network_plugins_start' ) );
@@ -82,7 +82,7 @@ final class Plugin_Load_Timer {
 	public function record_mu_plugin( string $file ): void {
 		if ( $this->skip_next_mu_plugin ) {
 			$this->skip_next_mu_plugin = false;
-			$this->last                = microtime( true );
+			$this->last                = Clock::now();
 			return;
 		}
 
@@ -141,7 +141,7 @@ final class Plugin_Load_Timer {
 	 */
 	private function mark_start( string $type ): void {
 		if ( ! isset( $this->started[ $type ] ) ) {
-			$this->last = microtime( true );
+			$this->last = Clock::now();
 		}
 	}
 
@@ -152,7 +152,7 @@ final class Plugin_Load_Timer {
 	 * @param string $file Full path of the plugin file.
 	 */
 	private function record( string $type, string $file ): void {
-		$now = microtime( true );
+		$now = Clock::now();
 
 		$this->started[ $type ] = true;
 

@@ -70,7 +70,9 @@ Each number is the median response time of `/sample-page/`, averaged over three 
 
 The results change from run to run by up to about 4 ms. The administrator case without a session showed +0.8 ms to +4.9 ms. The session case gives the most stable result: +16.3 ms to +18.5 ms.
 
-Session times include the profiler's own cost, so a report shows a slightly slower page than the page really is.
+Reports leave out the profiler's own time. The profiler adds up the time its own code runs, and every time in a report subtracts it. Two costs happen outside the profiler's code: WordPress calling the profiler for every hook, and calling each callback wrapper. The profiler times both once when the session starts, and subtracts them too. Each report shows how much time it left out, and the `Server-Timing` header sends it as `lp-overhead`.
+
+On `/sample-page/`, the report total was within about 1 ms of the server time without a session, in 5 of 6 runs of 20 requests each. Before this change, reports were about 6 ms, or 13%, slower than the page.
 
 To measure your own site, start wp-env and run:
 

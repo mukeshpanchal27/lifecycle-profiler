@@ -50,9 +50,9 @@ function get_report(): array {
 }
 
 /**
- * Converts a microtime( true ) value to milliseconds since the request started.
+ * Converts a Clock::now() value to milliseconds since the request started.
  *
- * @param float $time Time from microtime( true ).
+ * @param float $time Time from Clock::now().
  * @return float Milliseconds since the request started.
  */
 function ms_since_request_start( float $time ): float {

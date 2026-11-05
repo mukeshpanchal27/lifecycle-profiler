@@ -42,7 +42,7 @@ function is_profiling(): bool {
 function start_span( string $name ): void {
 	$starts = &span_starts();
 
-	$starts[ $name ][] = microtime( true );
+	$starts[ $name ][] = Clock::now();
 }
 
 /**
@@ -61,7 +61,7 @@ function stop_span( string $name ): ?float {
 	}
 
 	$start    = array_pop( $starts[ $name ] );
-	$duration = seconds_to_ms( microtime( true ) - $start );
+	$duration = seconds_to_ms( Clock::now() - $start );
 
 	$entry = get_report()['spans'][ $name ] ?? array(
 		'start'      => ms_since_request_start( $start ),

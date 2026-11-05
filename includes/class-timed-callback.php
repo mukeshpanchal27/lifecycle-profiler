@@ -34,6 +34,17 @@ final class Timed_Callback {
 	private static $stack = array();
 
 	/**
+	 * Cost of one call through the wrapper that it cannot time itself, in seconds.
+	 *
+	 * WordPress calling the wrapper object, and the return from it, happen
+	 * outside the times that __invoke() can take. Hook_Timer measures this
+	 * cost once per request.
+	 *
+	 * @var float
+	 */
+	private static $call_cost = 0.0;
+
+	/**
 	 * The wrapped callable.
 	 *
 	 * Not typed as callable, because a hook callback may only become
@@ -81,6 +92,8 @@ final class Timed_Callback {
 	 * @return mixed What the callable returns.
 	 */
 	public function __invoke( ...$args ) {
+		$entered = microtime( true );
+
 		/*
 		 * Pass references to the local copies. A callable that takes an
 		 * argument by reference then runs without a PHP warning.
@@ -92,13 +105,17 @@ final class Timed_Callback {
 		unset( $arg );
 
 		self::$stack[] = 0.0;
-		$start         = microtime( true );
+
+		// The work before the call is profiler time.
+		Clock::add_overhead_since( $entered );
+		$start = Clock::now();
 
 		try {
 			return call_user_func_array( $this->callback, $refs );
 		} finally {
-			$elapsed = microtime( true ) - $start;
-			$nested  = array_pop( self::$stack );
+			$returned = microtime( true );
+			$elapsed  = ( $returned - Clock::get_overhead() ) - $start;
+			$nested   = array_pop( self::$stack );
 
 			++$this->calls;
 			$this->total_time += $elapsed;
@@ -108,7 +125,19 @@ final class Timed_Callback {
 			if ( $parent >= 0 ) {
 				self::$stack[ $parent ] += $elapsed;
 			}
+
+			// The work after the call is profiler time too, and so is the call layer.
+			Clock::add_overhead( microtime( true ) - $returned + self::$call_cost );
 		}
+	}
+
+	/**
+	 * Sets the cost of one call through the wrapper.
+	 *
+	 * @param float $seconds Cost in seconds.
+	 */
+	public static function set_call_cost( float $seconds ): void {
+		self::$call_cost = max( 0.0, $seconds );
 	}
 
 	/**

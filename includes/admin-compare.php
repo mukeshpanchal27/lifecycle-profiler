@@ -157,6 +157,11 @@ function render_compare_summary( array $base, array $target ): void {
 				<td><?php echo esc_html( number_format_i18n( (float) ( $base['total_time'] ?? 0 ), 2 ) ); ?></td>
 				<td><?php echo esc_html( number_format_i18n( (float) ( $target['total_time'] ?? 0 ), 2 ) ); ?></td>
 			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Profiler time left out (ms)', 'lifecycle-profiler' ); ?></th>
+				<td><?php echo esc_html( format_compare_time( isset( $base['overhead_time'] ) ? (float) $base['overhead_time'] : null ) ); ?></td>
+				<td><?php echo esc_html( format_compare_time( isset( $target['overhead_time'] ) ? (float) $target['overhead_time'] : null ) ); ?></td>
+			</tr>
 		</tbody>
 	</table>
 	<?php

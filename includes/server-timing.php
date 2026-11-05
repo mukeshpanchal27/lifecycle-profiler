@@ -38,8 +38,20 @@ function send_server_timing_header(): void {
 	$header = get_server_timing_header( get_report()['phases'] ?? array() );
 
 	if ( '' !== $header ) {
-		header( 'Server-Timing: ' . $header, false );
+		header( 'Server-Timing: ' . $header . ', ' . get_overhead_metric( Clock::get_overhead() ), false );
 	}
+}
+
+/**
+ * Builds the Server-Timing metric for the profiler's own time.
+ *
+ * The phase metrics leave this time out. This metric shows how much it was.
+ *
+ * @param float $seconds Profiler time in seconds.
+ * @return string Metric such as 'lp-overhead;dur=6.120;desc="Profiler time left out"'.
+ */
+function get_overhead_metric( float $seconds ): string {
+	return sprintf( 'lp-overhead;dur=%.3F;desc="Profiler time left out"', $seconds * 1000 );
 }
 
 /**
