@@ -194,6 +194,17 @@ function render_report_meta( array $meta ): void {
 			esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) ( $meta['time'] ?? 0 ) ) ),
 			esc_html( number_format_i18n( (float) ( $meta['total_time'] ?? 0 ), 1 ) )
 		);
+
+		// Reports saved before 1.0.0 include the profiler time and have no overhead value.
+		if ( isset( $meta['overhead_time'] ) ) {
+			echo '<br /><span class="description">';
+			printf(
+				/* translators: %s: Time in milliseconds. */
+				esc_html__( 'The profiler\'s own work took %s ms. Every time on this screen leaves it out.', 'lifecycle-profiler' ),
+				esc_html( number_format_i18n( (float) $meta['overhead_time'], 1 ) )
+			);
+			echo '</span>';
+		}
 		?>
 	</p>
 	<?php

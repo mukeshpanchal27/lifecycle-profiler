@@ -24,6 +24,7 @@ define( 'LIFECYCLE_PROFILER_FILE', __FILE__ );
 define( 'LIFECYCLE_PROFILER_DIR', plugin_dir_path( __FILE__ ) );
 
 require_once LIFECYCLE_PROFILER_DIR . 'includes/loader.php';
+require_once LIFECYCLE_PROFILER_DIR . 'includes/class-clock.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/session.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/report.php';
 require_once LIFECYCLE_PROFILER_DIR . 'includes/storage.php';

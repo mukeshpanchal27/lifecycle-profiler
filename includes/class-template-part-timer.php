@@ -66,7 +66,13 @@ final class Template_Part_Timer {
 	 * @param string $file Full path of the template file.
 	 */
 	public function start_file( $file ): void {
-		$this->start( get_relative_path( wp_normalize_path( (string) $file ) ) );
+		$raw_start = microtime( true );
+
+		try {
+			$this->start( get_relative_path( wp_normalize_path( (string) $file ) ) );
+		} finally {
+			Clock::add_overhead_since( $raw_start );
+		}
 	}
 
 	/**
@@ -75,7 +81,13 @@ final class Template_Part_Timer {
 	 * @param string $file Full path of the template file.
 	 */
 	public function stop_file( $file ): void {
-		$this->stop( get_relative_path( wp_normalize_path( (string) $file ) ), 'file' );
+		$raw_start = microtime( true );
+
+		try {
+			$this->stop( get_relative_path( wp_normalize_path( (string) $file ) ), 'file' );
+		} finally {
+			Clock::add_overhead_since( $raw_start );
+		}
 	}
 
 	/**
@@ -86,11 +98,17 @@ final class Template_Part_Timer {
 	 * @return string|null The same value.
 	 */
 	public function start_block( $pre, $parsed_block ) {
-		if ( null === $pre && is_array( $parsed_block ) && self::BLOCK_NAME === ( $parsed_block['blockName'] ?? null ) ) {
-			$this->start( $this->get_block_part_name( $parsed_block ) );
-		}
+		$raw_start = microtime( true );
 
-		return $pre;
+		try {
+			if ( null === $pre && is_array( $parsed_block ) && self::BLOCK_NAME === ( $parsed_block['blockName'] ?? null ) ) {
+				$this->start( $this->get_block_part_name( $parsed_block ) );
+			}
+
+			return $pre;
+		} finally {
+			Clock::add_overhead_since( $raw_start );
+		}
 	}
 
 	/**
@@ -101,21 +119,33 @@ final class Template_Part_Timer {
 	 * @return string The same content.
 	 */
 	public function stop_block( $content, $block ) {
-		if ( is_array( $block ) && self::BLOCK_NAME === ( $block['blockName'] ?? null ) ) {
-			$this->stop( $this->get_block_part_name( $block ), 'block' );
-		}
+		$raw_start = microtime( true );
 
-		return $content;
+		try {
+			if ( is_array( $block ) && self::BLOCK_NAME === ( $block['blockName'] ?? null ) ) {
+				$this->stop( $this->get_block_part_name( $block ), 'block' );
+			}
+
+			return $content;
+		} finally {
+			Clock::add_overhead_since( $raw_start );
+		}
 	}
 
 	/**
 	 * Adds each template part to the report.
 	 */
 	public function record_parts(): void {
-		foreach ( $this->parts as $name => $part ) {
-			$part['total_time'] = seconds_to_ms( $part['total_time'] );
+		$raw_start = microtime( true );
 
-			add_report_entry( self::SECTION, $name, $part );
+		try {
+			foreach ( $this->parts as $name => $part ) {
+				$part['total_time'] = seconds_to_ms( $part['total_time'] );
+
+				add_report_entry( self::SECTION, $name, $part );
+			}
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
 	}
 
@@ -145,7 +175,7 @@ final class Template_Part_Timer {
 	private function start( string $name ): void {
 		$this->open[] = array(
 			'name'  => $name,
-			'start' => microtime( true ),
+			'start' => Clock::now(),
 		);
 	}
 
@@ -177,6 +207,6 @@ final class Template_Part_Timer {
 		}
 
 		++$this->parts[ $name ]['calls'];
-		$this->parts[ $name ]['total_time'] += microtime( true ) - $last['start'];
+		$this->parts[ $name ]['total_time'] += Clock::now() - $last['start'];
 	}
 }
