@@ -35,7 +35,7 @@ final class Template_Timer {
 	private $file = null;
 
 	/**
-	 * When the template started, as microtime( true ).
+	 * When the template started, as Clock::now().
 	 *
 	 * @var float
 	 */
@@ -59,7 +59,7 @@ final class Template_Timer {
 	public function start( $template ) {
 		if ( is_string( $template ) && '' !== $template ) {
 			$this->file  = wp_normalize_path( $template );
-			$this->start = microtime( true );
+			$this->start = Clock::now();
 		}
 
 		return $template;
@@ -72,21 +72,27 @@ final class Template_Timer {
 	 * names the block template, such as "twentytwentyfive//page".
 	 */
 	public function record_template(): void {
-		if ( null === $this->file ) {
-			return;
+		$raw_start = microtime( true );
+
+		try {
+			if ( null === $this->file ) {
+				return;
+			}
+
+			$block_template = $GLOBALS['_wp_current_template_id'] ?? null;
+
+			add_report_entry(
+				self::SECTION,
+				'main',
+				array(
+					'file'           => get_relative_path( $this->file ),
+					'block_template' => is_string( $block_template ) ? $block_template : null,
+					'start'          => ms_since_request_start( $this->start ),
+					'duration'       => seconds_to_ms( Clock::now() - $this->start ),
+				)
+			);
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
-
-		$block_template = $GLOBALS['_wp_current_template_id'] ?? null;
-
-		add_report_entry(
-			self::SECTION,
-			'main',
-			array(
-				'file'           => get_relative_path( $this->file ),
-				'block_template' => is_string( $block_template ) ? $block_template : null,
-				'start'          => ms_since_request_start( $this->start ),
-				'duration'       => seconds_to_ms( microtime( true ) - $this->start ),
-			)
-		);
 	}
 }

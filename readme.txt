@@ -69,7 +69,7 @@ Without a session, it adds about 1 ms to a page. During a session, it adds about
 
 = Are the times exact? =
 
-The times include the profiler's own cost, so a profiled page looks slightly slower than it is. Compare reports made the same way. The difference between two reports is more useful than one number.
+The profiler leaves its own time out of every number. Each report says how much time it left out. On a test page, report totals were within about 1 ms of the page time without the profiler. Small differences remain, so compare reports made the same way. The change between two reports is more useful than one number.
 
 = Who can start a session? =
 
@@ -101,6 +101,7 @@ All plugin options on every site, including every report, and the mu-plugin file
 * First release on wordpress.org.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
+* Leave the profiler's own time out of every time in a report, and show how much was left out.
 * Use the right plural form in the report limit text.
 * Stop the mu-plugin file when it is opened directly, and update it on the next admin page load when it is out of date.
 * Show an info notice when there are no reports, or too few to compare.

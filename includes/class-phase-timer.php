@@ -35,7 +35,7 @@ final class Phase_Timer {
 	);
 
 	/**
-	 * Start time of each phase, as name => microtime( true ), in firing order.
+	 * Start time of each phase, as name => Clock::now(), in firing order.
 	 *
 	 * @var array<string, float>
 	 */
@@ -64,7 +64,7 @@ final class Phase_Timer {
 		$action = current_action();
 
 		if ( ! isset( $this->marks[ $action ] ) ) {
-			$this->marks[ $action ] = microtime( true );
+			$this->marks[ $action ] = Clock::now();
 		}
 	}
 
@@ -74,22 +74,28 @@ final class Phase_Timer {
 	 * The last mark, shutdown, only ends the phase before it.
 	 */
 	public function record_phases(): void {
-		$names = array_keys( $this->marks );
-		$count = count( $names );
+		$raw_start = microtime( true );
 
-		for ( $i = 0; $i < $count - 1; $i++ ) {
-			$start = $this->marks[ $names[ $i ] ];
-			$end   = $this->marks[ $names[ $i + 1 ] ];
+		try {
+			$names = array_keys( $this->marks );
+			$count = count( $names );
 
-			add_report_entry(
-				'phases',
-				$names[ $i ],
-				array(
-					'end'      => $names[ $i + 1 ],
-					'start'    => ms_since_request_start( $start ),
-					'duration' => seconds_to_ms( $end - $start ),
-				)
-			);
+			for ( $i = 0; $i < $count - 1; $i++ ) {
+				$start = $this->marks[ $names[ $i ] ];
+				$end   = $this->marks[ $names[ $i + 1 ] ];
+
+				add_report_entry(
+					'phases',
+					$names[ $i ],
+					array(
+						'end'      => $names[ $i + 1 ],
+						'start'    => ms_since_request_start( $start ),
+						'duration' => seconds_to_ms( $end - $start ),
+					)
+				);
+			}
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
 	}
 }

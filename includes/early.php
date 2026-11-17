@@ -10,8 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /*
- * All profiler times use microtime( true ), the same clock as
- * REQUEST_TIME_FLOAT, so durations between them are correct.
+ * All profiler times use Clock::now(). It is on the same scale as
+ * REQUEST_TIME_FLOAT, but it leaves out the time of the profiler's own work.
  */
 
 // When PHP started handling the request.
@@ -30,6 +30,7 @@ if ( ! LifecycleProfiler\is_plugin_enabled() ) {
 	return;
 }
 
+require_once __DIR__ . '/class-clock.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/report.php';
 require_once __DIR__ . '/class-plugin-load-timer.php';
@@ -47,6 +48,9 @@ require_once __DIR__ . '/api.php';
 
 if ( LifecycleProfiler\is_session_active() ) {
 	define( 'LIFECYCLE_PROFILER_PROFILING', true );
+
+	// Loading the profiler is profiler time. Count it before any timer starts.
+	LifecycleProfiler\Clock::add_overhead_since( LIFECYCLE_PROFILER_LOADER_START );
 
 	( new LifecycleProfiler\Plugin_Load_Timer() )->register();
 	( new LifecycleProfiler\Phase_Timer() )->register();

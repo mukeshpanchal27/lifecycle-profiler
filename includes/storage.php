@@ -54,11 +54,13 @@ function save_report(): void {
 
 	$report['meta'] = array(
 		// esc_url_raw() keeps percent-encoded characters, which sanitize_text_field() removes.
-		'url'        => isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
-		'method'     => isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '',
-		'time'       => time(),
-		'user_id'    => get_current_user_id(),
-		'total_time' => ms_since_request_start( microtime( true ) ),
+		'url'           => isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '',
+		'method'        => isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '',
+		'time'          => time(),
+		'user_id'       => get_current_user_id(),
+		'total_time'    => ms_since_request_start( Clock::now() ),
+		// Profiler time that every time in the report leaves out.
+		'overhead_time' => seconds_to_ms( Clock::get_overhead() ),
 	);
 
 	add_saved_report( $report, microtime( true ) );
@@ -101,12 +103,14 @@ function add_saved_report( array $report, float $time ): string {
 
 	$index        = get_report_index();
 	$index[ $id ] = array(
-		'id'         => $id,
-		'label'      => '',
-		'url'        => (string) ( $meta['url'] ?? '' ),
-		'method'     => (string) ( $meta['method'] ?? '' ),
-		'time'       => $time,
-		'total_time' => (float) ( $meta['total_time'] ?? 0 ),
+		'id'            => $id,
+		'label'         => '',
+		'url'           => (string) ( $meta['url'] ?? '' ),
+		'method'        => (string) ( $meta['method'] ?? '' ),
+		'time'          => $time,
+		'total_time'    => (float) ( $meta['total_time'] ?? 0 ),
+		// Missing in reports saved before 1.0.0.
+		'overhead_time' => isset( $meta['overhead_time'] ) ? (float) $meta['overhead_time'] : null,
 	);
 
 	update_report_index( $index );

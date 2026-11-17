@@ -77,19 +77,25 @@ final class Block_Timer {
 	 * @return string|null The same value.
 	 */
 	public function start( $pre, $parsed_block ) {
-		$name = $this->get_block_name( $parsed_block );
+		$raw_start = microtime( true );
 
-		if ( null === $pre && null !== $name ) {
-			$this->open[] = array(
-				'name'       => $name,
-				'start'      => microtime( true ),
-				'inner_time' => 0.0,
-			);
+		try {
+			$name = $this->get_block_name( $parsed_block );
 
-			$this->depth[ $name ] = ( $this->depth[ $name ] ?? 0 ) + 1;
+			if ( null === $pre && null !== $name ) {
+				$this->open[] = array(
+					'name'       => $name,
+					'start'      => Clock::now(),
+					'inner_time' => 0.0,
+				);
+
+				$this->depth[ $name ] = ( $this->depth[ $name ] ?? 0 ) + 1;
+			}
+
+			return $pre;
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
-
-		return $pre;
 	}
 
 	/**
@@ -103,50 +109,62 @@ final class Block_Timer {
 	 * @return string The same content.
 	 */
 	public function stop( $content, $block ) {
-		$name = $this->get_block_name( $block );
-		$last = end( $this->open );
+		$raw_start = microtime( true );
 
-		if ( null === $name || false === $last || $last['name'] !== $name ) {
+		try {
+			$name = $this->get_block_name( $block );
+			$last = end( $this->open );
+
+			if ( null === $name || false === $last || $last['name'] !== $name ) {
+				return $content;
+			}
+
+			array_pop( $this->open );
+			--$this->depth[ $name ];
+
+			$total = Clock::now() - $last['start'];
+
+			if ( array() !== $this->open ) {
+				$this->open[ count( $this->open ) - 1 ]['inner_time'] += $total;
+			}
+
+			if ( ! isset( $this->blocks[ $name ] ) ) {
+				$this->blocks[ $name ] = array(
+					'name'       => $name,
+					'calls'      => 0,
+					'total_time' => 0.0,
+					'self_time'  => 0.0,
+				);
+			}
+
+			++$this->blocks[ $name ]['calls'];
+			$this->blocks[ $name ]['self_time'] += $total - $last['inner_time'];
+
+			if ( 0 === $this->depth[ $name ] ) {
+				$this->blocks[ $name ]['total_time'] += $total;
+			}
+
 			return $content;
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
-
-		array_pop( $this->open );
-		--$this->depth[ $name ];
-
-		$total = microtime( true ) - $last['start'];
-
-		if ( array() !== $this->open ) {
-			$this->open[ count( $this->open ) - 1 ]['inner_time'] += $total;
-		}
-
-		if ( ! isset( $this->blocks[ $name ] ) ) {
-			$this->blocks[ $name ] = array(
-				'name'       => $name,
-				'calls'      => 0,
-				'total_time' => 0.0,
-				'self_time'  => 0.0,
-			);
-		}
-
-		++$this->blocks[ $name ]['calls'];
-		$this->blocks[ $name ]['self_time'] += $total - $last['inner_time'];
-
-		if ( 0 === $this->depth[ $name ] ) {
-			$this->blocks[ $name ]['total_time'] += $total;
-		}
-
-		return $content;
 	}
 
 	/**
 	 * Adds each block type to the report.
 	 */
 	public function record_blocks(): void {
-		foreach ( $this->blocks as $name => $block ) {
-			$block['total_time'] = seconds_to_ms( $block['total_time'] );
-			$block['self_time']  = seconds_to_ms( $block['self_time'] );
+		$raw_start = microtime( true );
 
-			add_report_entry( self::SECTION, $name, $block );
+		try {
+			foreach ( $this->blocks as $name => $block ) {
+				$block['total_time'] = seconds_to_ms( $block['total_time'] );
+				$block['self_time']  = seconds_to_ms( $block['self_time'] );
+
+				add_report_entry( self::SECTION, $name, $block );
+			}
+		} finally {
+			Clock::add_overhead_since( $raw_start );
 		}
 	}
 
