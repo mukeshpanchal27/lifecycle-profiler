@@ -13,6 +13,7 @@ use function LifecycleProfiler\get_loader_contents;
 use function LifecycleProfiler\get_loader_path;
 use function LifecycleProfiler\is_loader_current;
 use function LifecycleProfiler\maybe_install_loader;
+use function LifecycleProfiler\remove_loader;
 use const LifecycleProfiler\LOADER_RETRY_TRANSIENT;
 
 /**
@@ -24,6 +25,8 @@ use const LifecycleProfiler\LOADER_RETRY_TRANSIENT;
  * @covers ::LifecycleProfiler\get_loader_contents
  * @covers ::LifecycleProfiler\is_loader_current
  * @covers ::LifecycleProfiler\maybe_install_loader
+ * @covers ::LifecycleProfiler\remove_loader
+ * @covers ::LifecycleProfiler\is_plugin_used_elsewhere
  */
 class Test_Loader extends WP_UnitTestCase {
 
@@ -102,6 +105,115 @@ class Test_Loader extends WP_UnitTestCase {
 		maybe_install_loader();
 
 		$this->assertTrue( is_loader_current() );
+	}
+
+	/**
+	 * Returns the plugin basename that the activation options use.
+	 *
+	 * @return string Plugin basename.
+	 */
+	private function basename(): string {
+		return plugin_basename( LIFECYCLE_PROFILER_FILE );
+	}
+
+	/**
+	 * On a single site, deactivation removes the loader.
+	 *
+	 * @group ms-excluded
+	 */
+	public function test_deactivation_removes_loader_on_single_site() {
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( false );
+
+		$this->assertFileDoesNotExist( get_loader_path() );
+	}
+
+	/**
+	 * Deactivating on one site keeps the loader while another site uses the plugin.
+	 *
+	 * The current site still lists the plugin, as it does while WordPress runs
+	 * the deactivation hook.
+	 *
+	 * @group ms-required
+	 */
+	public function test_site_deactivation_keeps_loader_for_other_site() {
+		$other = self::factory()->blog->create();
+		update_option( 'active_plugins', array( $this->basename() ) );
+		update_blog_option( $other, 'active_plugins', array( $this->basename() ) );
+		update_site_option( 'active_sitewide_plugins', array() );
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( false );
+
+		$this->assertFileExists( get_loader_path() );
+	}
+
+	/**
+	 * Deactivating on the last site that uses the plugin removes the loader.
+	 *
+	 * @group ms-required
+	 */
+	public function test_site_deactivation_on_last_site_removes_loader() {
+		$other = self::factory()->blog->create();
+		update_option( 'active_plugins', array( $this->basename() ) );
+		update_blog_option( $other, 'active_plugins', array() );
+		update_site_option( 'active_sitewide_plugins', array() );
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( false );
+
+		$this->assertFileDoesNotExist( get_loader_path() );
+	}
+
+	/**
+	 * Deactivating on one site keeps the loader while the plugin is network-active.
+	 *
+	 * @group ms-required
+	 */
+	public function test_site_deactivation_keeps_loader_when_network_active() {
+		update_option( 'active_plugins', array( $this->basename() ) );
+		update_site_option( 'active_sitewide_plugins', array( $this->basename() => time() ) );
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( false );
+
+		$this->assertFileExists( get_loader_path() );
+	}
+
+	/**
+	 * Network deactivation removes the loader when no site activated the plugin on its own.
+	 *
+	 * The network option still lists the plugin, as it does while WordPress
+	 * runs the deactivation hook.
+	 *
+	 * @group ms-required
+	 */
+	public function test_network_deactivation_removes_loader() {
+		update_option( 'active_plugins', array() );
+		update_site_option( 'active_sitewide_plugins', array( $this->basename() => time() ) );
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( true );
+
+		$this->assertFileDoesNotExist( get_loader_path() );
+	}
+
+	/**
+	 * Network deactivation keeps the loader for a site that activated the plugin on its own.
+	 *
+	 * @group ms-required
+	 */
+	public function test_network_deactivation_keeps_loader_for_site_activation() {
+		$other = self::factory()->blog->create();
+		update_option( 'active_plugins', array() );
+		update_blog_option( $other, 'active_plugins', array( $this->basename() ) );
+		update_site_option( 'active_sitewide_plugins', array( $this->basename() => time() ) );
+		$this->write_loader( get_loader_contents() );
+
+		remove_loader( true );
+
+		$this->assertFileExists( get_loader_path() );
 	}
 
 	/**
