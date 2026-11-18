@@ -101,6 +101,7 @@ All plugin options on every site, including every report, and the mu-plugin file
 * First release on wordpress.org.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
+* Add a shutdown phase, so the phases add up to the total time.
 * Show the 20 slowest hook callbacks on the report screen, with where each one is defined.
 * Tell reports of the same page apart in the compare lists, with seconds and the total time.
 * On multisite, keep the mu-plugin file while another site still uses the plugin.

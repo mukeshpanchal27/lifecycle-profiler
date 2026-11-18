@@ -53,6 +53,35 @@ final class Phase_Timer {
 		}
 
 		add_action( 'shutdown', array( $this, 'record_phases' ), PHP_INT_MIN, 0 );
+
+		// Just before the report is saved at PHP_INT_MAX.
+		add_action( 'shutdown', array( $this, 'record_shutdown' ), PHP_INT_MAX - 1, 0 );
+	}
+
+	/**
+	 * Adds the shutdown phase to the report.
+	 *
+	 * The phase runs from the shutdown mark until the report is saved. It holds
+	 * the work that other plugins do on shutdown, so the phases add up to the
+	 * saved total. The Server-Timing header goes out before this phase ends,
+	 * so only the saved report has it.
+	 */
+	public function record_shutdown(): void {
+		if ( ! isset( $this->marks['shutdown'] ) ) {
+			return;
+		}
+
+		$start = $this->marks['shutdown'];
+
+		add_report_entry(
+			'phases',
+			'shutdown',
+			array(
+				'end'      => 'report',
+				'start'    => ms_since_request_start( $start ),
+				'duration' => seconds_to_ms( Clock::now() - $start ),
+			)
+		);
 	}
 
 	/**
@@ -71,7 +100,8 @@ final class Phase_Timer {
 	/**
 	 * Adds each phase to the report.
 	 *
-	 * The last mark, shutdown, only ends the phase before it.
+	 * The last mark, shutdown, ends the phase before it. record_shutdown()
+	 * adds the shutdown phase itself later.
 	 */
 	public function record_phases(): void {
 		$raw_start = microtime( true );
