@@ -101,6 +101,7 @@ function render_admin_page(): void {
 			<h2><?php echo esc_html( get_report_title( $index[ $id ] ) ); ?></h2>
 			<?php render_report_meta( $report['meta'] ?? array() ); ?>
 			<?php render_source_table( get_source_totals( $report ) ); ?>
+			<?php render_callback_table( $report['callbacks'] ?? array(), $id ); ?>
 			<?php render_phase_table( $report['phases'] ?? array(), (float) ( $report['meta']['total_time'] ?? 0 ) ); ?>
 			<?php render_template_section( $report ); ?>
 			<?php render_span_table( $report['spans'] ?? array() ); ?>
@@ -375,6 +376,71 @@ function sort_slowest_first( array $entries, string $field ): array {
 	);
 
 	return $entries;
+}
+
+/**
+ * Number of callbacks in the slowest callbacks table.
+ */
+const SLOWEST_CALLBACKS = 20;
+
+/**
+ * Renders the slowest hook callbacks, by self time.
+ *
+ * Shows nothing if the report has no callback times.
+ *
+ * @param array<string, array<string, mixed>> $callbacks Callback entries.
+ * @param string                              $id        Report ID, for the download link.
+ */
+function render_callback_table( array $callbacks, string $id ): void {
+	if ( array() === $callbacks ) {
+		return;
+	}
+
+	$rows = array_slice( sort_slowest_first( $callbacks, 'self_time' ), 0, SLOWEST_CALLBACKS );
+	?>
+	<h2><?php esc_html_e( 'Slowest callbacks', 'lifecycle-profiler' ); ?></h2>
+	<p>
+		<?php
+		printf(
+			/* translators: 1: Number of callbacks shown, 2: Number of callbacks in the report. */
+			esc_html( _n( 'The %1$s slowest of %2$s hook callback, by self time. Self time leaves out nested callbacks.', 'The %1$s slowest of %2$s hook callbacks, by self time. Self time leaves out nested callbacks.', count( $callbacks ), 'lifecycle-profiler' ) ),
+			esc_html( number_format_i18n( count( $rows ) ) ),
+			esc_html( number_format_i18n( count( $callbacks ) ) )
+		);
+		?>
+		<a href="<?php echo esc_url( get_export_url( $id ) ); ?>"><?php esc_html_e( 'Download JSON for all callbacks', 'lifecycle-profiler' ); ?></a>
+	</p>
+
+	<table class="widefat striped">
+		<thead>
+			<tr>
+				<th scope="col"><?php esc_html_e( 'Callback', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Hook and priority', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Source', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Self (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Total (ms)', 'lifecycle-profiler' ); ?></th>
+				<th scope="col"><?php esc_html_e( 'Calls', 'lifecycle-profiler' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach ( $rows as $row ) : ?>
+				<tr>
+					<td>
+						<code><?php echo esc_html( (string) ( $row['callback'] ?? '' ) ); ?></code>
+						<?php if ( ! empty( $row['location'] ) ) : ?>
+							<br /><span class="description"><?php echo esc_html( (string) $row['location'] ); ?></span>
+						<?php endif; ?>
+					</td>
+					<td><code><?php echo esc_html( (string) ( $row['hook'] ?? '' ) ); ?></code> <?php echo esc_html( (string) ( $row['priority'] ?? '' ) ); ?></td>
+					<td><?php echo esc_html( get_source_label( (string) ( $row['source_type'] ?? '' ), (string) ( $row['source_name'] ?? '' ) ) ); ?></td>
+					<td><strong><?php echo esc_html( number_format_i18n( (float) $row['self_time'], 2 ) ); ?></strong></td>
+					<td><?php echo esc_html( number_format_i18n( (float) ( $row['total_time'] ?? 0 ), 2 ) ); ?></td>
+					<td><?php echo esc_html( number_format_i18n( (int) ( $row['calls'] ?? 0 ) ) ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+	<?php
 }
 
 /**
