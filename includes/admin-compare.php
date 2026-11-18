@@ -88,6 +88,8 @@ function render_compare_screen( array $index ): void {
 
 		<?php render_compare_summary( $index[ $base_id ], $index[ $target_id ] ); ?>
 
+		<p class="description"><?php esc_html_e( 'Single requests vary, even when nothing changed. Profile each side several times, and compare typical runs before you trust a small change.', 'lifecycle-profiler' ); ?></p>
+
 		<?php
 		$sections = compare_reports( $base, $target );
 

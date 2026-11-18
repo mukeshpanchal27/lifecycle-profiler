@@ -71,6 +71,18 @@ Without a session, it adds about 1 ms to a page. During a session, it adds about
 
 The profiler leaves its own time out of every number. Each report says how much time it left out. On a test page, report totals were within about 1 ms of the page time without the profiler. Small differences remain, so compare reports made the same way. The change between two reports is more useful than one number.
 
+= Why is time to first byte so slow while profiling? =
+
+During a session, the plugin holds the whole page until the request ends, so it can send the `Server-Timing` header. The browser gets the first byte only then, so time to first byte equals the full request time. Turn profiling off before you measure time to first byte.
+
+= Why does the same page show different times? =
+
+Every request varies a little, because of caches, the database and other work on the server. In one test, an unchanged page took from 46 to 122 ms. Profile each side of a change several times, and compare typical runs.
+
+= Are all mu-plugins timed? =
+
+Most are. WordPress loads mu-plugins in file name order, and the profiler starts in `0-lifecycle-profiler-loader.php`. An mu-plugin whose name sorts before it, such as `00-cache.php`, loads before the profiler, so its load time is not measured.
+
 = Who can start a session? =
 
 Users with the `manage_options` capability, usually administrators. Other visitors are never profiled. On multisite, site administrators can profile their own site.
@@ -101,6 +113,7 @@ All plugin options on every site, including every report, and the mu-plugin file
 * First release on wordpress.org.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
+* Explain time to first byte while profiling, run-to-run noise and early mu-plugins, and note on the compare screen that single runs vary.
 * Add a shutdown phase, so the phases add up to the total time.
 * Show the 20 slowest hook callbacks on the report screen, with where each one is defined.
 * Tell reports of the same page apart in the compare lists, with seconds and the total time.
