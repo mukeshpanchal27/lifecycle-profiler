@@ -96,12 +96,58 @@ function install_loader(): bool {
 /**
  * Removes the loader file from the mu-plugins directory.
  *
- * Runs on plugin deactivation.
+ * Runs on plugin deactivation. On multisite, every site shares the
+ * mu-plugins directory, so the file stays while another site still uses the
+ * plugin.
+ *
+ * @param bool $network_deactivating Whether the plugin is being deactivated for the whole network.
  */
-function remove_loader(): void {
+function remove_loader( $network_deactivating = false ): void {
+	if ( is_multisite() && is_plugin_used_elsewhere( (bool) $network_deactivating ) ) {
+		return;
+	}
+
 	if ( file_exists( get_loader_path() ) ) {
 		wp_delete_file( get_loader_path() );
 	}
+}
+
+/**
+ * Checks whether another site of the network still uses the plugin.
+ *
+ * WordPress runs the deactivation hook before it saves the active plugins.
+ * So the options still list the plugin for the site, or the network, that is
+ * being deactivated, and this check skips that entry.
+ *
+ * @param bool $network_deactivating Whether the plugin is being deactivated for the whole network.
+ * @return bool True if the plugin stays active somewhere after this deactivation.
+ */
+function is_plugin_used_elsewhere( bool $network_deactivating ): bool {
+	$basename = plugin_basename( LIFECYCLE_PROFILER_FILE );
+
+	if ( ! $network_deactivating && isset( ( (array) get_site_option( 'active_sitewide_plugins', array() ) )[ $basename ] ) ) {
+		return true;
+	}
+
+	$current_site_id = get_current_blog_id();
+
+	foreach ( get_sites(
+		array(
+			'fields' => 'ids',
+			'number' => 0,
+		)
+	) as $site_id ) {
+		// A single-site deactivation still lists the plugin for the current site.
+		if ( ! $network_deactivating && (int) $site_id === $current_site_id ) {
+			continue;
+		}
+
+		if ( in_array( $basename, (array) get_blog_option( (int) $site_id, 'active_plugins', array() ), true ) ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**

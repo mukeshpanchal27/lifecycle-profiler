@@ -101,6 +101,7 @@ All plugin options on every site, including every report, and the mu-plugin file
 * First release on wordpress.org.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
+* On multisite, keep the mu-plugin file while another site still uses the plugin.
 * Leave the profiler's own time out of every time in a report, and show how much was left out.
 * Use the right plural form in the report limit text.
 * Stop the mu-plugin file when it is opened directly, and update it on the next admin page load when it is out of date.
