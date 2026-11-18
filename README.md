@@ -49,7 +49,9 @@ Deleting the plugin removes every option that starts with `lifecycle_profiler_`,
 ## Limits
 
 - A hook callback that takes an argument by reference gets a copy during a session. Changes it makes to an array or scalar argument are lost. Objects are not affected.
-- During a session, each response is buffered in memory until shutdown, so the header can be sent.
+- During a session, each response is buffered in memory until shutdown, so the header can be sent. The browser gets the first byte only when the whole request is done, so time to first byte equals the full request time. Do not read time to first byte in the network panel while profiling.
+- The same page gets a different time on every request. In an early review, single runs of an unchanged page ranged from 46 to 122 ms. Profile each side of a change several times, and compare typical runs, not one request against one request.
+- mu-plugins whose file names sort before `0-lifecycle-profiler-loader.php`, such as `00-…`, load before the profiler, so their load time is not measured.
 - AJAX, cron and REST requests do not save a report.
 - Two profiled requests that end at the same moment can both update the report list. One of the two reports may then be missing from the list.
 - A request that ends before `init` sends no header and saves no report, because the profiler cannot confirm the user yet.
