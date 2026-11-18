@@ -113,11 +113,30 @@ function render_report_select( string $name, string $label, array $index, string
 	<select id="lifecycle-profiler-<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>">
 		<?php foreach ( $index as $id => $entry ) : ?>
 			<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $id, $selected ); ?>>
-				<?php echo esc_html( get_report_title( $entry ) . ' (' . wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) ( $entry['time'] ?? 0 ) ) . ')' ); ?>
+				<?php echo esc_html( get_report_option_label( $entry ) ); ?>
 			</option>
 		<?php endforeach; ?>
 	</select>
 	<?php
+}
+
+/**
+ * Returns the text of one report in the report lists.
+ *
+ * Reports of the same page often share a title and a minute. The seconds and
+ * the total time tell them apart.
+ *
+ * @param array<string, mixed> $entry Index entry.
+ * @return string Text such as "GET / (November 7, 2026 15:20:41, 86.0 ms)".
+ */
+function get_report_option_label( array $entry ): string {
+	return sprintf(
+		/* translators: 1: Report label or request, 2: Date and time with seconds, 3: Total time in milliseconds. */
+		__( '%1$s (%2$s, %3$s ms)', 'lifecycle-profiler' ),
+		get_report_title( $entry ),
+		wp_date( get_option( 'date_format' ) . ' H:i:s', (int) ( $entry['time'] ?? 0 ) ),
+		number_format_i18n( (float) ( $entry['total_time'] ?? 0 ), 1 )
+	);
 }
 
 /**
