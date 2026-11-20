@@ -13,6 +13,7 @@ use function LifecycleProfiler\format_callback_location;
 use function LifecycleProfiler\get_callback_location;
 use function LifecycleProfiler\get_callback_name;
 use function LifecycleProfiler\get_file_source;
+use function LifecycleProfiler\get_plugin_link_path;
 use function LifecycleProfiler\is_own_callback;
 
 /**
@@ -23,6 +24,7 @@ use function LifecycleProfiler\is_own_callback;
  * @covers ::LifecycleProfiler\get_callback_location
  * @covers ::LifecycleProfiler\get_file_source
  * @covers ::LifecycleProfiler\format_callback_location
+ * @covers ::LifecycleProfiler\get_plugin_link_path
  */
 class Test_Callbacks extends WP_UnitTestCase {
 
@@ -195,5 +197,36 @@ class Test_Callbacks extends WP_UnitTestCase {
 		$this->assertTrue( is_own_callback( array( 'LifecycleProfiler\Hook_Timer', 'wrap_callbacks' ) ) );
 		$this->assertFalse( is_own_callback( 'wp_head' ) );
 		$this->assertFalse( is_own_callback( array( 'WP_Hook', 'add_filter' ) ) );
+	}
+
+	/**
+	 * A file in a symlinked plugin folder belongs to that plugin.
+	 *
+	 * PHP reports the resolved path, outside WP_PLUGIN_DIR. WordPress records
+	 * the link in $wp_plugin_paths.
+	 */
+	public function test_symlinked_plugin_file_source() {
+		global $wp_plugin_paths;
+
+		$saved   = $wp_plugin_paths;
+		$link    = wp_normalize_path( WP_PLUGIN_DIR ) . '/lp-linked';
+		$target  = '/srv/checkouts/lp-linked-worktree';
+		$outside = '/srv/checkouts/lp-linked-worktree-2/file.php';
+
+		$wp_plugin_paths = array( $link => $target );
+
+		try {
+			$this->assertSame( $link . '/includes/file.php', get_plugin_link_path( $target . '/includes/file.php' ) );
+			$this->assertSame( $outside, get_plugin_link_path( $outside ), 'A folder that only starts with the same name is not the plugin.' );
+			$this->assertSame(
+				array(
+					'type' => 'plugin',
+					'name' => 'lp-linked',
+				),
+				get_file_source( $target . '/includes/file.php' )
+			);
+		} finally {
+			$wp_plugin_paths = $saved;
+		}
 	}
 }

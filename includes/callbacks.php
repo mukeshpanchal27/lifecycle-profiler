@@ -165,6 +165,9 @@ function get_file_source( ?string $file ): array {
 		return $cache[ $file ];
 	}
 
+	$resolved_file = $file;
+	$file          = get_plugin_link_path( $file );
+
 	$folders = array(
 		'mu-plugin' => array( WPMU_PLUGIN_DIR ),
 		'plugin'    => array( WP_PLUGIN_DIR ),
@@ -213,9 +216,39 @@ function get_file_source( ?string $file ): array {
 		}
 	}
 
-	$cache[ $file ] = $source;
+	$cache[ $resolved_file ] = $source;
 
 	return $source;
+}
+
+/**
+ * Maps a file in a symlinked plugin folder back to its path in WP_PLUGIN_DIR.
+ *
+ * PHP reports the resolved path of a file, which can be outside
+ * WP_PLUGIN_DIR. WordPress records each symlinked plugin folder in
+ * $wp_plugin_paths, and plugin_basename() uses it the same way.
+ *
+ * @param string $file Normalized file path.
+ * @return string Path inside WP_PLUGIN_DIR, or the same path if no plugin folder links to it.
+ */
+function get_plugin_link_path( string $file ): string {
+	global $wp_plugin_paths;
+
+	if ( empty( $wp_plugin_paths ) || ! is_array( $wp_plugin_paths ) ) {
+		return $file;
+	}
+
+	// The longest resolved path first, as plugin_basename() does.
+	$paths = $wp_plugin_paths;
+	arsort( $paths );
+
+	foreach ( $paths as $link => $target ) {
+		if ( 0 === strpos( $file, $target . '/' ) ) {
+			return $link . substr( $file, strlen( $target ) );
+		}
+	}
+
+	return $file;
 }
 
 /**
