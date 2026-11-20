@@ -1,6 +1,6 @@
 # Lifecycle Profiler
 
-Lifecycle Profiler is a WordPress plugin that times the whole request. It measures bootstrap, the load time of each plugin and every hook callback. It sends the results in the `Server-Timing` header and offers a timing API.
+Lifecycle Profiler is a WordPress plugin that times the whole request. It measures bootstrap, the load time of each plugin, every hook callback, the template, template parts and blocks. It saves each run as a report, so you can compare a page before and after a change. It also sends the results in the `Server-Timing` header and offers a timing API.
 
 ## Status
 
@@ -19,12 +19,24 @@ Only users with the `manage_options` capability can start a session. Other visit
 
 The report shows:
 
-- the main phases of the request, from bootstrap to shutdown
-- load time and hook time for each plugin, theme and core
+- the request, the total time and how much profiler time it left out
+- load time and hook time for each mu-plugin, plugin, theme, drop-in and core
+- the 20 slowest hook callbacks, with the hook, the priority and the file and line where each one is defined
+- the main phases of the request, from bootstrap to shutdown. The phases add up to the total time.
 - the template, each template part and each block type, slowest first
 - custom spans from the timing API
 
-During a session, each response also has a `Server-Timing` header with the phase times. Your browser's developer tools show it in the network panel.
+The JSON download has every callback, not only the slowest 20.
+
+During a session, each response also has a `Server-Timing` header. It has one metric for each phase, and `lp-overhead` for the profiler time left out. Your browser's developer tools show it in the network panel.
+
+## How it differs from Query Monitor
+
+Query Monitor shows what happened during one request: database queries, HTTP calls, PHP errors, enqueued assets and more. It does not save anything, and it does not time each hook callback.
+
+Lifecycle Profiler shows where the time went. It times phases, plugin load, every callback, templates and blocks, and it saves reports so you can compare runs. It does not list queries or errors.
+
+The two plugins work well together. Use Query Monitor to find a slow query or an error. Use Lifecycle Profiler to measure the page before and after your fix. In an early review, the totals of both plugins matched for the same page.
 
 ## Timing API
 
@@ -38,7 +50,9 @@ Outside a profiling session, both functions do nothing, and `lifecycle_profiler_
 
 ## How it works
 
-On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
+On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. If the file is missing or out of date, an administrator's next admin page load writes it again. On deactivation, the plugin removes the file. On multisite, the file stays while the plugin is still active on another site or for the whole network.
+
+During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
 
 ## Data and uninstall
 
@@ -60,17 +74,17 @@ Deleting the plugin removes every option that starts with `lifecycle_profiler_`,
 
 ## Overhead
 
-Without a session, the plugin adds about 1 ms to a page for visitors. During a session, it adds about 18 ms, or about 40%, because it wraps and times every hook callback.
+Without a session, the plugin adds about 1 ms or less to a page. During a session, it adds about 18 ms, or about 36%, because it wraps and times every hook callback.
 
 | Case | Logged out | Administrator |
 | --- | --- | --- |
-| Plugin inactive | 42.6 ms | 44.4 ms |
-| Plugin active, no session | 43.8 ms (+1.2 ms) | 47.8 ms (+3.4 ms) |
-| Plugin active, session | Not possible | 61.9 ms (+17.5 ms) |
+| Plugin inactive | 47.2 ms | 49.0 ms |
+| Plugin active, no session | 47.4 ms (+0.2 ms) | 50.4 ms (+1.3 ms) |
+| Plugin active, session | Not possible | 66.9 ms (+17.9 ms) |
 
-Each number is the median response time of `/sample-page/`, averaged over three runs. Each run made 100 requests per case after 10 warm-up requests. The site was the wp-env development site with PHP 7.4, WordPress 7.1.4 and Twenty Twenty-Five, in Docker on macOS.
+Each number is the median response time of `/sample-page/`, averaged over three runs. Each run made 100 requests per case after 10 warm-up requests. The site was the wp-env development site with PHP 7.4, WordPress 7.1.5 and Twenty Twenty-Five, in Docker on macOS. The numbers are from 2026-11-20, with version 1.0.0.
 
-The results change from run to run by up to about 4 ms. The administrator case without a session showed +0.8 ms to +4.9 ms. The session case gives the most stable result: +16.3 ms to +18.5 ms.
+The results change from run to run by up to about 2 ms. The administrator case without a session showed +1.0 ms to +1.5 ms. The session case showed +16.9 ms to +18.7 ms. It includes about 3 ms that the profiler spends at the start of each session to time its own costs.
 
 Reports leave out the profiler's own time. The profiler adds up the time its own code runs, and every time in a report subtracts it. Two costs happen outside the profiler's code: WordPress calling the profiler for every hook, and calling each callback wrapper. The profiler times both once when the session starts, and subtracts them too. Each report shows how much time it left out, and the `Server-Timing` header sends it as `lp-overhead`.
 
@@ -103,7 +117,7 @@ npm exec --no -- wp-env start
 
 The site runs at http://localhost:8888 with the plugin active. Log in with `admin` and `password`.
 
-A second site has the [Excimer](https://www.mediawiki.org/wiki/Excimer) PHP extension installed, for testing flame graphs:
+A second site has the [Excimer](https://www.mediawiki.org/wiki/Excimer) PHP extension installed. Use it to check the profiler's results against a sampling profiler:
 
 ```sh
 npm exec --no -- wp-env start --config=.wp-env.excimer.json

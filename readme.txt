@@ -12,7 +12,7 @@ Times the whole WordPress request, from bootstrap and plugin load to every hook 
 
 == Description ==
 
-Lifecycle Profiler shows where a WordPress request spends its time. It measures bootstrap, the load time of each plugin and every hook callback. It sends the results in the `Server-Timing` header and shows them on a Tools screen.
+Lifecycle Profiler shows where a WordPress request spends its time. It measures bootstrap, the load time of each plugin, every hook callback, the template, template parts and blocks. It saves each run as a report, so you can compare a page before and after a change. It also sends the results in the `Server-Timing` header.
 
 Profiling runs only for administrators who turn it on. Other visitors are never profiled.
 
@@ -34,6 +34,7 @@ Click "Compare reports" to see two reports side by side. Each row shows the chan
 * The main phases of the request, from bootstrap to shutdown.
 * The load time of each mu-plugin and plugin.
 * The time of every hook callback, added up for each plugin, theme and core.
+* The 20 slowest hook callbacks, with the hook, the priority and where each one is defined.
 * The template, each template part and each block type.
 * Custom spans from your own code, through the timing API.
 
@@ -65,7 +66,11 @@ The file loads the profiler before regular plugins, so it can time how long each
 
 = Does the plugin slow down my site? =
 
-Without a session, it adds about 1 ms to a page. During a session, it adds about 18 ms, or about 40%, because it times every hook callback. Only the administrator who started the session pays that cost, and only for one hour.
+Without a session, it adds about 1 ms or less to a page. During a session, it adds about 18 ms, or about 36%, because it times every hook callback. Only the administrator who started the session pays that cost, and only for one hour.
+
+= How is it different from Query Monitor? =
+
+Query Monitor shows what happened during one request, such as database queries, HTTP calls and PHP errors. Lifecycle Profiler shows where the time went, down to each hook callback, and saves reports so you can compare runs. The two plugins work well together.
 
 = Are the times exact? =
 
@@ -102,9 +107,10 @@ All plugin options on every site, including every report, and the mu-plugin file
 == Screenshots ==
 
 1. Tools > Profiler lists the saved reports, then the time of each plugin, theme and core in the chosen report.
-2. The template, the template parts and the time of each block type.
-3. The compare screen shows the change between two reports, with the largest change first.
-4. The admin bar item starts and stops a profiling session.
+2. The slowest hook callbacks, with the hook, the priority and where each one is defined.
+3. The template, the template parts and the time of each block type.
+4. The compare screen shows the change between two reports, with the largest change first.
+5. The admin bar item starts and stops a profiling session.
 
 == Changelog ==
 
