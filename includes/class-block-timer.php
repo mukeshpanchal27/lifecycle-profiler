@@ -24,6 +24,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Blocks without a name are skipped. They are mostly the empty space between
  * blocks.
+ *
+ * Some blocks call WP_Block::render() again on themselves, without
+ * pre_render_block. For example, core/comment-template renders itself once
+ * for each comment. Each of those renders still fires render_block. So the
+ * timer tracks every running render, and only the render that follows
+ * pre_render_block stops the timer of its block.
  */
 final class Block_Timer {
 
@@ -54,11 +60,28 @@ final class Block_Timer {
 	private $depth = array();
 
 	/**
+	 * Whether the next WP_Block::render() call renders a block that start() opened.
+	 *
+	 * @var bool
+	 */
+	private $pending = false;
+
+	/**
+	 * Running WP_Block::render() calls, innermost last. True if the render
+	 * belongs to a block that start() opened.
+	 *
+	 * @var bool[]
+	 */
+	private $renders = array();
+
+	/**
 	 * Adds the hooks. Call this from the mu-plugin loader.
 	 */
 	public function register(): void {
 		// Last, so the timer sees whether another filter returned content.
 		add_filter( 'pre_render_block', array( $this, 'start' ), PHP_INT_MAX, 2 );
+		// WP_Block::render() applies this filter first, and nothing else in core applies it.
+		add_filter( 'interactivity_process_directives', array( $this, 'enter_render' ), PHP_INT_MIN );
 		// Last, so the time includes the other render_block filters.
 		add_filter( 'render_block', array( $this, 'stop' ), PHP_INT_MAX, 2 );
 
@@ -82,7 +105,9 @@ final class Block_Timer {
 		try {
 			$name = $this->get_block_name( $parsed_block );
 
-			if ( null === $pre && null !== $name ) {
+			$this->pending = null === $pre && null !== $name;
+
+			if ( $this->pending ) {
 				$this->open[] = array(
 					'name'       => $name,
 					'start'      => Clock::now(),
@@ -99,10 +124,24 @@ final class Block_Timer {
 	}
 
 	/**
+	 * Notes that WP_Block::render() started.
+	 *
+	 * @param mixed $enabled Filter value, passed through unchanged.
+	 * @return mixed The same value.
+	 */
+	public function enter_render( $enabled ) {
+		$this->renders[] = $this->pending;
+		$this->pending   = false;
+
+		return $enabled;
+	}
+
+	/**
 	 * Stops timing a block and adds its time to its block type.
 	 *
-	 * Does nothing if the innermost open block has another name. That happens
-	 * when code calls WP_Block::render() directly, which skips pre_render_block.
+	 * Does nothing for a render that did not follow pre_render_block, such as
+	 * a block that renders itself again. Also does nothing if the innermost
+	 * open block has another name.
 	 *
 	 * @param string               $content Rendered block content.
 	 * @param array<string, mixed> $block   Parsed block.
@@ -112,6 +151,13 @@ final class Block_Timer {
 		$raw_start = microtime( true );
 
 		try {
+			// Null if a render started before the timer was registered.
+			$opened = array_pop( $this->renders );
+
+			if ( true !== $opened ) {
+				return $content;
+			}
+
 			$name = $this->get_block_name( $block );
 			$last = end( $this->open );
 
