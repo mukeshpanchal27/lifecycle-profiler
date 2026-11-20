@@ -42,6 +42,9 @@ const LEGACY_REPORT_OPTION = 'lifecycle_profiler_latest_report';
  * recorded.
  */
 function save_report(): void {
+	// Taken before the checks below, so their time is not in the total.
+	$now = ms_since_request_start( Clock::now() );
+
 	if ( ! is_session_confirmed() || ! should_save_report() ) {
 		return;
 	}
@@ -58,12 +61,32 @@ function save_report(): void {
 		'method'        => isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : '',
 		'time'          => time(),
 		'user_id'       => get_current_user_id(),
-		'total_time'    => ms_since_request_start( Clock::now() ),
+		'total_time'    => get_total_time( $report, $now ),
 		// Profiler time that every time in the report leaves out.
 		'overhead_time' => seconds_to_ms( Clock::get_overhead() ),
 	);
 
 	add_saved_report( $report, microtime( true ) );
+}
+
+/**
+ * Returns the total time of a report.
+ *
+ * The total ends where the shutdown phase ends, so the phases add up to it.
+ * Work after that point, such as the checks before saving, is in neither.
+ *
+ * @param array<string, mixed> $report Report without meta.
+ * @param float                $now    Time to use without a shutdown phase, in milliseconds since the request start.
+ * @return float Total time in milliseconds.
+ */
+function get_total_time( array $report, float $now ): float {
+	$shutdown = $report['phases']['shutdown'] ?? null;
+
+	if ( ! is_array( $shutdown ) || ! isset( $shutdown['start'], $shutdown['duration'] ) ) {
+		return $now;
+	}
+
+	return round( (float) $shutdown['start'] + (float) $shutdown['duration'], 3 );
 }
 
 /**
