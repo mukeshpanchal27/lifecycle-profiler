@@ -32,6 +32,11 @@ class Test_Plugin_Load_Timer extends WP_UnitTestCase {
 	public static function set_up_before_class() {
 		parent::set_up_before_class();
 
+		// The loader defines this outside tests.
+		if ( ! defined( 'LIFECYCLE_PROFILER_REQUEST_START' ) ) {
+			define( 'LIFECYCLE_PROFILER_REQUEST_START', microtime( true ) );
+		}
+
 		require_once dirname( __DIR__, 3 ) . '/includes/class-clock.php';
 		require_once dirname( __DIR__, 3 ) . '/includes/report.php';
 		require_once dirname( __DIR__, 3 ) . '/includes/class-plugin-load-timer.php';
@@ -76,7 +81,7 @@ class Test_Plugin_Load_Timer extends WP_UnitTestCase {
 		get_option( 'active_plugins' );
 
 		$file = WP_PLUGIN_DIR . '/lp-test-other-read/plugin.php';
-		do_action( 'plugin_loaded', $file );
+		do_action( 'plugin_loaded', $file ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core fires this hook.
 
 		$this->assertGreaterThanOrEqual( 20.0, $this->load_time( $file ) );
 	}
@@ -89,7 +94,7 @@ class Test_Plugin_Load_Timer extends WP_UnitTestCase {
 		wp_get_active_and_valid_plugins();
 
 		$file = WP_PLUGIN_DIR . '/lp-test-core-read/plugin.php';
-		do_action( 'plugin_loaded', $file );
+		do_action( 'plugin_loaded', $file ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core fires this hook.
 
 		$this->assertLessThan( 20.0, $this->load_time( $file ) );
 	}
