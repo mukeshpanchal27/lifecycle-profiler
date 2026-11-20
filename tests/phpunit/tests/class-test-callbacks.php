@@ -213,7 +213,7 @@ class Test_Callbacks extends WP_UnitTestCase {
 		$target  = '/srv/checkouts/lp-linked-worktree';
 		$outside = '/srv/checkouts/lp-linked-worktree-2/file.php';
 
-		$wp_plugin_paths = array( $link => $target );
+		$wp_plugin_paths = array( $link => $target ); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restored in finally.
 
 		try {
 			$this->assertSame( $link . '/includes/file.php', get_plugin_link_path( $target . '/includes/file.php' ) );
@@ -226,7 +226,7 @@ class Test_Callbacks extends WP_UnitTestCase {
 				get_file_source( $target . '/includes/file.php' )
 			);
 		} finally {
-			$wp_plugin_paths = $saved;
+			$wp_plugin_paths = $saved; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restores the value.
 		}
 	}
 }
