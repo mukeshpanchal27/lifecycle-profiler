@@ -16,10 +16,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * WordPress fires an action right after it includes each plugin file. The
  * load time of a plugin is the time since the previous plugin of the same
- * type loaded. For the first plugin of a type, the start is the last read of
- * the option that lists those plugins. WordPress reads that option just
- * before it includes the first plugin, so core work before that point is not
- * counted as plugin load time.
+ * type loaded. For the first plugin of a type, the start is when WordPress
+ * reads the option that lists those plugins, just before it includes the
+ * first one. So core work before that point is not counted as plugin load
+ * time.
+ *
+ * Other code can read the same option, for example an mu-plugin that checks
+ * whether another plugin is active. Only the read by the core function that
+ * lists the plugins marks the start.
  */
 final class Plugin_Load_Timer {
 
@@ -96,7 +100,7 @@ final class Plugin_Load_Timer {
 	 * @return mixed Option value.
 	 */
 	public function mark_network_plugins_start( $value ) {
-		$this->mark_start( 'network-plugin' );
+		$this->mark_start( 'network-plugin', 'wp_get_active_network_plugins' );
 
 		return $value;
 	}
@@ -117,7 +121,7 @@ final class Plugin_Load_Timer {
 	 * @return mixed Option value.
 	 */
 	public function mark_plugins_start( $value ) {
-		$this->mark_start( 'plugin' );
+		$this->mark_start( 'plugin', 'wp_get_active_and_valid_plugins' );
 
 		return $value;
 	}
@@ -132,17 +136,44 @@ final class Plugin_Load_Timer {
 	}
 
 	/**
-	 * Moves the start time to now, until the first plugin of a type loads.
+	 * Moves the start time to now when core is about to load a plugin type.
 	 *
-	 * A plugin may read the same option while it loads. Those reads must not
-	 * move the start time.
+	 * Reads after the first plugin of the type loaded, and reads that do not
+	 * come from the core function, do not move the start time.
 	 *
-	 * @param string $type Plugin type.
+	 * @param string $type          Plugin type.
+	 * @param string $core_function Core function that reads the option before loading.
 	 */
-	private function mark_start( string $type ): void {
-		if ( ! isset( $this->started[ $type ] ) ) {
+	private function mark_start( string $type, string $core_function ): void {
+		if ( isset( $this->started[ $type ] ) ) {
+			return;
+		}
+
+		$raw_start = microtime( true );
+		$from_core = self::is_called_from( $core_function );
+
+		Clock::add_overhead_since( $raw_start );
+
+		if ( $from_core ) {
 			$this->last = Clock::now();
 		}
+	}
+
+	/**
+	 * Checks whether a function is in the current call stack.
+	 *
+	 * @param string $function_name Function name, without a namespace.
+	 * @return bool True if the function is in the call stack.
+	 */
+	private static function is_called_from( string $function_name ): bool {
+		// Runs at most a few times per request, before plugins load.
+		foreach ( debug_backtrace( DEBUG_BACKTRACE_IGNORE_ARGS ) as $frame ) { // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace
+			if ( ! isset( $frame['class'] ) && $function_name === $frame['function'] ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
