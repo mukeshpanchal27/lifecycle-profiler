@@ -7,7 +7,8 @@
  * that folder to wordpress.org.
  *
  * Screenshots come from the wp-env development site, which must be running
- * and have at least two saved reports.
+ * and have at least two saved reports. The compare screenshot uses the two
+ * newest reports, so make them for the same page.
  *
  * Usage: node bin/make-wordpress-org-assets.js [--skip-screenshots]
  */
@@ -56,12 +57,15 @@ async function screenshots( browser ) {
 	await page.goto( site + '/wp-admin/tools.php?page=lifecycle-profiler' );
 	await shot( 1 );
 
-	await showHeading( 'Templates and blocks' );
+	await showHeading( 'Slowest callbacks' );
 	await shot( 2 );
+
+	await showHeading( 'Templates and blocks' );
+	await shot( 3 );
 
 	await page.goto( site + '/wp-admin/tools.php?page=lifecycle-profiler&view=compare' );
 	await showHeading( 'Plugins, themes and core' );
-	await shot( 3 );
+	await shot( 4 );
 
 	// Turn the session on for the admin bar screenshot, then off again.
 	const toggle = '#wp-admin-bar-lifecycle-profiler > a';
@@ -70,7 +74,7 @@ async function screenshots( browser ) {
 	await page.goto( site + '/sample-page/' );
 	await page.click( toggle );
 	await page.locator( toggle, { hasText: 'Profiler: ON' } ).waitFor();
-	await shot( 4 );
+	await shot( 5 );
 	await page.click( toggle );
 
 	await page.close();
