@@ -23,6 +23,14 @@ define(
 // When the mu-plugin loader ran.
 define( 'LIFECYCLE_PROFILER_LOADER_START', microtime( true ) );
 
+/*
+ * The plugin folder name, from the path the loader required. __DIR__ resolves
+ * symlinks, so it can name another folder when the plugin folder is a link.
+ */
+if ( isset( $lifecycle_profiler_early_file ) && is_string( $lifecycle_profiler_early_file ) ) {
+	define( 'LIFECYCLE_PROFILER_FOLDER', basename( dirname( $lifecycle_profiler_early_file, 2 ) ) );
+}
+
 require_once __DIR__ . '/plugin-state.php';
 
 // The loader can outlive the plugin. Do nothing if the plugin is not active.

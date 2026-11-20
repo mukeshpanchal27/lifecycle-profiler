@@ -15,11 +15,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Returns the plugin basename, such as "lifecycle-profiler/lifecycle-profiler.php".
  *
  * The main plugin file has not loaded yet when the loader runs, so the
- * basename comes from the folder of this file.
+ * basename comes from the folder that the loader used. The folder of this
+ * file is the last choice, because PHP resolves symlinks in __DIR__.
  *
  * @return string Plugin basename.
  */
 function get_plugin_basename(): string {
+	if ( defined( 'LIFECYCLE_PROFILER_FOLDER' ) ) {
+		return LIFECYCLE_PROFILER_FOLDER . '/lifecycle-profiler.php';
+	}
+
+	if ( defined( 'LIFECYCLE_PROFILER_FILE' ) ) {
+		return plugin_basename( LIFECYCLE_PROFILER_FILE );
+	}
+
 	return basename( dirname( __DIR__ ) ) . '/lifecycle-profiler.php';
 }
 
