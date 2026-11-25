@@ -2,11 +2,15 @@
 /**
  * Profiling sessions.
  *
- * A request is profiled only when it carries a valid session cookie. The
- * cookie holds a user ID, an expiry time and an HMAC signature. The session
- * check must run before regular plugins load, when the WordPress login
- * functions do not exist yet. Until init, the check only verifies the
- * signature and the expiry. After init, it also checks the current user.
+ * While the plugin is active, every request by an administrator is profiled.
+ * The profiler must decide before regular plugins load, when WordPress cannot
+ * check the login yet. So the plugin sets its own signed cookie when an
+ * administrator logs in, and removes it on logout. The cookie holds a user
+ * ID, an expiry time and an HMAC signature.
+ *
+ * Until init, the check only verifies the signature and the expiry. After
+ * init, it also checks that the current user matches the cookie and still
+ * has the capability.
  *
  * @package LifecycleProfiler
  */
@@ -28,14 +32,14 @@ const SESSION_COOKIE = 'lifecycle_profiler_session';
 const SESSION_SECRET_OPTION = 'lifecycle_profiler_session_secret';
 
 /**
- * Capability a user needs to start a session.
+ * Capability a user needs to be profiled.
  */
 const SESSION_CAPABILITY = 'manage_options';
 
 /**
- * How long a session lasts, in seconds.
+ * How long a session lasts when the login cookie gives no expiry, in seconds.
  */
-const SESSION_LENGTH = 3600;
+const SESSION_FALLBACK_LENGTH = 2 * DAY_IN_SECONDS;
 
 /**
  * Returns the secret key for signing session cookies.
@@ -147,22 +151,72 @@ function is_session_confirmed(): bool {
 /**
  * Starts a session for a user by setting the session cookie.
  *
- * @param int $user_id User ID.
+ * @param int $user_id        User ID.
+ * @param int $expiration     Unix time when the session ends.
+ * @param int $cookie_expires Unix time when the browser drops the cookie, or 0 when the browser closes.
  * @return bool True if the cookie was set.
  */
-function start_session( int $user_id ): bool {
+function start_session( int $user_id, int $expiration, int $cookie_expires = 0 ): bool {
 	if ( ! user_can( $user_id, SESSION_CAPABILITY ) || headers_sent() ) {
 		return false;
 	}
 
-	$expires = time() + SESSION_LENGTH;
-	$token   = create_session_token( $user_id, $expires );
+	$token = create_session_token( $user_id, $expiration );
 
-	set_session_cookie( $token, $expires );
+	set_session_cookie( $token, $cookie_expires );
 	$_COOKIE[ SESSION_COOKIE ] = $token;
 
 	return true;
 }
+
+/**
+ * Starts a session when an administrator logs in.
+ *
+ * The session ends when the login does, and the cookie lasts as long as the
+ * login cookie.
+ *
+ * @param string $logged_in_cookie Login cookie value. Not used.
+ * @param int    $cookie_expires   Unix time when the browser drops the login cookie, or 0.
+ * @param int    $expiration       Unix time when the login ends.
+ * @param int    $user_id          User ID.
+ */
+function start_session_on_login( $logged_in_cookie, $cookie_expires, $expiration, $user_id ): void {
+	start_session( (int) $user_id, (int) $expiration, (int) $cookie_expires );
+}
+add_action( 'set_logged_in_cookie', __NAMESPACE__ . '\start_session_on_login', 10, 4 );
+
+/**
+ * Checks whether the current user needs a new session cookie.
+ *
+ * That is the case for an administrator who logged in before the plugin was
+ * active, whose cookie expired, or who has the cookie of another user.
+ *
+ * @return bool True if the current user can be profiled but has no session for themselves.
+ */
+function needs_session_cookie(): bool {
+	$user_id = get_current_user_id();
+
+	return 0 !== $user_id && current_user_can( SESSION_CAPABILITY ) && get_session_user_id() !== $user_id;
+}
+
+/**
+ * Starts a session for a logged-in administrator who has none.
+ *
+ * The current request is not profiled, because the timers start before
+ * WordPress knows the user. Profiling starts with the next request.
+ */
+function maybe_start_session(): void {
+	if ( ! needs_session_cookie() ) {
+		return;
+	}
+
+	$login      = wp_parse_auth_cookie( '', 'logged_in' );
+	$expiration = is_array( $login ) && ! empty( $login['expiration'] ) ? (int) $login['expiration'] : time() + SESSION_FALLBACK_LENGTH;
+
+	start_session( get_current_user_id(), $expiration );
+}
+add_action( 'init', __NAMESPACE__ . '\maybe_start_session' );
+add_action( 'clear_auth_cookie', __NAMESPACE__ . '\end_session' );
 
 /**
  * Ends the current session by removing the session cookie.

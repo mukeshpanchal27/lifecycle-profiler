@@ -66,7 +66,34 @@ function save_report(): void {
 		'overhead_time' => seconds_to_ms( Clock::get_overhead() ),
 	);
 
-	add_saved_report( $report, microtime( true ) );
+	add_saved_report( $report, microtime( true ), get_current_report_id() );
+}
+
+/**
+ * Returns the ID that the report of the current request will be saved under.
+ *
+ * The ID is known before the report is saved, so the admin bar can link to
+ * the report of the page it is on.
+ *
+ * @return string Report ID: 12 hex characters.
+ */
+function get_current_report_id(): string {
+	static $id = null;
+
+	if ( null === $id ) {
+		$id = new_report_id();
+	}
+
+	return $id;
+}
+
+/**
+ * Returns a new random report ID.
+ *
+ * @return string Report ID: 12 hex characters.
+ */
+function new_report_id(): string {
+	return bin2hex( random_bytes( 6 ) );
 }
 
 /**
@@ -116,10 +143,11 @@ function should_save_report(): bool {
  *
  * @param array<string, mixed> $report Report data with a "meta" section.
  * @param float                $time   When the report was saved, as a Unix time.
+ * @param string|null          $id     Report ID, or null for a new one.
  * @return string ID of the new report.
  */
-function add_saved_report( array $report, float $time ): string {
-	$id   = bin2hex( random_bytes( 6 ) );
+function add_saved_report( array $report, float $time, ?string $id = null ): string {
+	$id   = $id ?? new_report_id();
 	$meta = isset( $report['meta'] ) && is_array( $report['meta'] ) ? $report['meta'] : array();
 
 	add_option( REPORT_OPTION_PREFIX . $id, $report, '', false );

@@ -13,6 +13,9 @@ use function LifecycleProfiler\create_session_token;
 use function LifecycleProfiler\get_session_user_id;
 use function LifecycleProfiler\is_session_active;
 use function LifecycleProfiler\is_session_confirmed;
+use function LifecycleProfiler\needs_session_cookie;
+use function LifecycleProfiler\add_admin_bar_item;
+use function LifecycleProfiler\get_admin_page_url;
 use function LifecycleProfiler\parse_session_token;
 use const LifecycleProfiler\SESSION_COOKIE;
 use const LifecycleProfiler\SESSION_SECRET_OPTION;
@@ -25,6 +28,8 @@ use const LifecycleProfiler\SESSION_SECRET_OPTION;
  * @covers ::LifecycleProfiler\get_session_user_id
  * @covers ::LifecycleProfiler\is_session_active
  * @covers ::LifecycleProfiler\is_session_confirmed
+ * @covers ::LifecycleProfiler\needs_session_cookie
+ * @covers ::LifecycleProfiler\add_admin_bar_item
  */
 class Test_Session extends WP_UnitTestCase {
 
@@ -250,5 +255,84 @@ class Test_Session extends WP_UnitTestCase {
 		$this->set_cookie( create_session_token( self::$admin_id, time() - 1 ) );
 
 		$this->assertFalse( $this->before_init( 'LifecycleProfiler\is_session_active' ) );
+	}
+
+	/**
+	 * A logged-in administrator without a cookie needs one.
+	 */
+	public function test_admin_without_cookie_needs_cookie() {
+		wp_set_current_user( self::$admin_id );
+
+		$this->assertTrue( needs_session_cookie() );
+	}
+
+	/**
+	 * An administrator with their own valid cookie needs no new one.
+	 */
+	public function test_admin_with_cookie_needs_no_cookie() {
+		wp_set_current_user( self::$admin_id );
+		$this->set_cookie( create_session_token( self::$admin_id, time() + 60 ) );
+
+		$this->assertFalse( needs_session_cookie() );
+	}
+
+	/**
+	 * An administrator with an expired cookie, or the cookie of another user, needs a new one.
+	 */
+	public function test_admin_with_wrong_cookie_needs_cookie() {
+		wp_set_current_user( self::$admin_id );
+
+		$this->set_cookie( create_session_token( self::$admin_id, time() - 1 ) );
+		$this->assertTrue( needs_session_cookie(), 'Expired cookie.' );
+
+		$this->set_cookie( create_session_token( self::$subscriber_id, time() + 60 ) );
+		$this->assertTrue( needs_session_cookie(), 'Cookie of another user.' );
+	}
+
+	/**
+	 * Visitors and users without the capability never get a cookie.
+	 */
+	public function test_others_need_no_cookie() {
+		wp_set_current_user( 0 );
+		$this->assertFalse( needs_session_cookie(), 'Visitor.' );
+
+		wp_set_current_user( self::$subscriber_id );
+		$this->assertFalse( needs_session_cookie(), 'Subscriber.' );
+	}
+
+	/**
+	 * Returns the admin bar after the plugin added its item.
+	 *
+	 * @return \WP_Admin_Bar Admin bar.
+	 */
+	private function admin_bar(): \WP_Admin_Bar {
+		require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
+
+		$bar = new \WP_Admin_Bar();
+		add_admin_bar_item( $bar );
+
+		return $bar;
+	}
+
+	/**
+	 * Without a profiled request, the admin bar item opens the saved reports.
+	 */
+	public function test_admin_bar_item_links_to_reports() {
+		wp_set_current_user( self::$admin_id );
+
+		$node = $this->admin_bar()->get_node( 'lifecycle-profiler' );
+
+		$this->assertNotNull( $node );
+		$this->assertSame( get_admin_page_url(), $node->href );
+		$this->assertStringNotContainsString( 'lifecycle_profiler_toggle', $node->href, 'The item no longer turns profiling on or off.' );
+	}
+
+	/**
+	 * Users without the capability get no admin bar item.
+	 */
+	public function test_no_admin_bar_item_for_subscriber() {
+		wp_set_current_user( self::$subscriber_id );
+
+		$this->assertNull( $this->admin_bar()->get_node( 'lifecycle-profiler' ) );
 	}
 }

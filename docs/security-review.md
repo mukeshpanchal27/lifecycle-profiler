@@ -12,7 +12,6 @@ Every action runs through `admin-post.php`. No action is registered for logged-o
 
 | Action | Method | Capability | Nonce | Result |
 | --- | --- | --- | --- | --- |
-| `lifecycle_profiler_toggle`: start or stop a session | GET link | `manage_options` | `lifecycle_profiler_toggle` | Pass |
 | `lifecycle_profiler_label`: change a report label | POST | `manage_options` | One nonce for each report | Pass |
 | `lifecycle_profiler_delete`: delete a report | POST | `manage_options` | One nonce for each report | Pass |
 | `lifecycle_profiler_export`: download a report | GET link | `manage_options` | One nonce for each report | Pass |
@@ -55,7 +54,8 @@ The three report actions check the capability before the nonce, and stop with a 
 
 ## Sessions
 
-- The cookie is `HttpOnly` and `SameSite=Lax`. It is `Secure` on HTTPS sites. It lasts one hour.
+- The cookie is `HttpOnly` and `SameSite=Lax`. It is `Secure` on HTTPS sites.
+- **Changed after this review:** the admin bar toggle and its `lifecycle_profiler_toggle` action are gone. The plugin now sets the cookie when a user with `manage_options` logs in, through `set_logged_in_cookie`, and removes it on `clear_auth_cookie`. The cookie lasts as long as the login. A logged-in administrator without a valid cookie of their own gets a new one on `init`.
 - The signing secret is 32 random bytes, stored in the `lifecycle_profiler_session_secret` option.
 - Before `init`, the check can only verify the signature and the expiry, because users are not loaded yet. From `init` on, the current user must match the cookie and have `manage_options`.
 
