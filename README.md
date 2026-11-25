@@ -8,14 +8,17 @@ Version 1.0.0 is ready for wordpress.org, but it is not submitted yet. See the [
 
 ## Usage
 
-1. Click "Profiler: OFF" in the admin bar. It changes to "Profiler: ON".
-2. Load the page you want to profile.
-3. Open Tools > Profiler to see the report.
-4. Click "Profiler: ON" to stop.
+1. Activate the plugin.
+2. Log in as an administrator, and load the page you want to profile.
+3. Click **Profiler** in the admin bar. It opens the report of that page.
+
+There is no switch. While the plugin is active, every request by an administrator is profiled. To stop profiling, deactivate the plugin.
+
+On HTTPS sites and on localhost, the admin bar item also shows the request time, such as "Profiler: 53.7 ms". Browsers share the `Server-Timing` header with scripts only on those sites.
 
 Each profiled page load saves a report. Tools > Profiler lists the newest 20 reports. You can give each report a label, delete it or download it as JSON. Click **Compare reports** to see two reports side by side, with the change for each row, largest change first.
 
-Only users with the `manage_options` capability can start a session. Other visitors are never profiled.
+Only users with the `manage_options` capability are profiled. Visitors and other logged-in users are never profiled, and they never get the `Server-Timing` header.
 
 The report shows:
 
@@ -28,7 +31,7 @@ The report shows:
 
 The JSON download has every callback, not only the slowest 20.
 
-During a session, each response also has a `Server-Timing` header. It has one metric for each phase, and `lp-overhead` for the profiler time left out. Your browser's developer tools show it in the network panel.
+Each profiled response also has a `Server-Timing` header. It has one metric for each phase, and `lp-overhead` for the profiler time left out. Your browser's developer tools show it in the network panel.
 
 ## How it differs from Query Monitor
 
@@ -46,13 +49,15 @@ build_menu();
 $ms = lifecycle_profiler_stop( 'my-plugin: build menu' );
 ```
 
-Outside a profiling session, both functions do nothing, and `lifecycle_profiler_stop()` returns `null`.
+Outside a profiled request, both functions do nothing, and `lifecycle_profiler_stop()` returns `null`.
 
 ## How it works
 
 On activation, the plugin writes `0-lifecycle-profiler-loader.php` to `mu-plugins/`. The loader runs before regular plugins, so the profiler can time plugin load. If the file is missing or out of date, an administrator's next admin page load writes it again. On deactivation, the plugin removes the file. On multisite, the file stays while the plugin is still active on another site or for the whole network.
 
-During a session, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
+The profiler must decide whether to profile a request before regular plugins load, when WordPress cannot check the login yet. So when an administrator logs in, the plugin sets its own signed cookie, `lifecycle_profiler_session`. The cookie lasts as long as the login, and logging out removes it. An administrator who was logged in before the plugin was active gets the cookie on their next request, and profiling starts with the request after that.
+
+During a profiled request, the profiler wraps every hook callback in a timer. At shutdown it saves the report in its own option, `lifecycle_profiler_report_{id}`, with autoload off. The `lifecycle_profiler_reports` option lists the saved reports. The `lifecycle_profiler_max_reports` filter changes how many reports to keep.
 
 ## Data and uninstall
 
@@ -62,8 +67,8 @@ Deleting the plugin removes every option that starts with `lifecycle_profiler_`,
 
 ## Limits
 
-- A hook callback that takes an argument by reference gets a copy during a session. Changes it makes to an array or scalar argument are lost. Objects are not affected.
-- During a session, each response is buffered in memory until shutdown, so the header can be sent. The browser gets the first byte only when the whole request is done, so time to first byte equals the full request time. Do not read time to first byte in the network panel while profiling.
+- A hook callback that takes an argument by reference gets a copy during a profiled request. Changes it makes to an array or scalar argument are lost. Objects are not affected.
+- Each profiled response is buffered in memory until shutdown, so the header can be sent. The browser gets the first byte only when the whole request is done, so time to first byte equals the full request time. Do not read time to first byte in the network panel while profiling.
 - The same page gets a different time on every request. In an early review, single runs of an unchanged page ranged from 46 to 122 ms. Profile each side of a change several times, and compare typical runs, not one request against one request.
 - mu-plugins whose file names sort before `0-lifecycle-profiler-loader.php`, such as `00-…`, load before the profiler, so their load time is not measured.
 - AJAX, cron and REST requests do not save a report.
@@ -74,21 +79,23 @@ Deleting the plugin removes every option that starts with `lifecycle_profiler_`,
 
 ## Overhead
 
-Without a session, the plugin adds about 1 ms or less to a page. During a session, it adds about 18 ms, or about 36%, because it wraps and times every hook callback.
+For requests that are not profiled, the plugin adds about 1 ms or less. A profiled request takes about 18 ms longer, or about 36%, because the profiler wraps and times every hook callback. Only administrators pay that cost.
 
-| Case | Logged out | Administrator |
+| Case | Logged out | Logged in |
 | --- | --- | --- |
 | Plugin inactive | 47.2 ms | 49.0 ms |
-| Plugin active, no session | 47.4 ms (+0.2 ms) | 50.4 ms (+1.3 ms) |
-| Plugin active, session | Not possible | 66.9 ms (+17.9 ms) |
+| Plugin active, not profiled | 47.4 ms (+0.2 ms) | 50.4 ms (+1.3 ms) |
+| Plugin active, profiled | Not possible | 66.9 ms (+17.9 ms) |
 
 Each number is the median response time of `/sample-page/`, averaged over three runs. Each run made 100 requests per case after 10 warm-up requests. The site was the wp-env development site with PHP 7.4, WordPress 7.1.5 and Twenty Twenty-Five, in Docker on macOS. The numbers are from 2026-11-20, with version 1.0.0.
 
-The results change from run to run by up to about 2 ms. The administrator case without a session showed +1.0 ms to +1.5 ms. The session case showed +16.9 ms to +18.7 ms. It includes about 3 ms that the profiler spends at the start of each session to time its own costs.
+The "logged in, not profiled" case used the administrator account without the profiler cookie.
 
-Reports leave out the profiler's own time. The profiler adds up the time its own code runs, and every time in a report subtracts it. Two costs happen outside the profiler's code: WordPress calling the profiler for every hook, and calling each callback wrapper. The profiler times both once when the session starts, and subtracts them too. Each report shows how much time it left out, and the `Server-Timing` header sends it as `lp-overhead`.
+The results change from run to run by up to about 2 ms. The logged-in case without profiling showed +1.0 ms to +1.5 ms. The profiled case showed +16.9 ms to +18.7 ms. It includes about 3 ms that the profiler spends at the start of each profiled request to time its own costs.
 
-On `/sample-page/`, the report total was within about 1 ms of the server time without a session, in 5 of 6 runs of 20 requests each. Before this change, reports were about 6 ms, or 13%, slower than the page.
+Reports leave out the profiler's own time. The profiler adds up the time its own code runs, and every time in a report subtracts it. Two costs happen outside the profiler's code: WordPress calling the profiler for every hook, and calling each callback wrapper. The profiler times both at the start of each profiled request, and subtracts them too. Each report shows how much time it left out, and the `Server-Timing` header sends it as `lp-overhead`.
+
+On `/sample-page/`, the report total was within about 1 ms of the server time without a session, in 5 of 6 runs of 20 requests each. Before the profiler left out its own time, reports were about 6 ms, or 13%, slower than the page.
 
 To measure your own site, start wp-env and run:
 
@@ -148,7 +155,7 @@ npm run test:php:multisite
 
 PHPUnit uses the database of the tests site at http://localhost:8889, and it reinstalls WordPress there on every run. Run `npm exec --no -- wp-env clean tests` to get that site back.
 
-The end-to-end tests use Playwright with Chromium, against the development site at http://localhost:8888. They log in as `admin` and turn a profiling session on and off. Set `WP_BASE_URL` to use another site.
+The end-to-end tests use Playwright with Chromium, against the development site at http://localhost:8888. They log in as `admin`, check the header and the admin bar item, and log out. Set `WP_BASE_URL` to use another site.
 
 ```sh
 npm exec --no -- playwright install chromium

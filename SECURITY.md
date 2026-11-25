@@ -25,7 +25,7 @@ Only the maintainer can see the report. The maintainer replies on the report, wo
 
 Lifecycle Profiler is a developer tool for administrators. These are security problems:
 
-- A user without the `manage_options` capability can start a profiling session, see a report or change one.
+- A user without the `manage_options` capability is profiled, or can see or change a report.
 - A visitor gets the `Server-Timing` header or a saved report.
 - A form or action works without a valid nonce.
 - Output that is not escaped, or input that is not sanitized.

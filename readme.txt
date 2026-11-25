@@ -14,14 +14,13 @@ Times the whole WordPress request, from bootstrap and plugin load to every hook 
 
 Lifecycle Profiler shows where a WordPress request spends its time. It measures bootstrap, the load time of each plugin, every hook callback, the template, template parts and blocks. It saves each run as a report, so you can compare a page before and after a change. It also sends the results in the `Server-Timing` header.
 
-Profiling runs only for administrators who turn it on. Other visitors are never profiled.
+While the plugin is active, every request by an administrator is profiled. Visitors and other users are never profiled. To stop profiling, deactivate the plugin.
 
 = How to use it =
 
-1. Click "Profiler: OFF" in the admin bar. It changes to "Profiler: ON".
-2. Load the page you want to profile.
-3. Open Tools > Profiler to see the report.
-4. Click "Profiler: ON" to stop.
+1. Activate the plugin.
+2. Log in as an administrator, and load the page you want to profile.
+3. Click "Profiler" in the admin bar. It opens the report of that page.
 
 = Saved reports =
 
@@ -46,7 +45,7 @@ Time your own code with two functions:
     build_menu();
     $ms = lifecycle_profiler_stop( 'my-plugin: build menu' );
 
-Outside a profiling session, both functions do nothing, and `lifecycle_profiler_stop()` returns `null`. The report shows each span with its total time and number of calls.
+Outside a profiled request, both functions do nothing, and `lifecycle_profiler_stop()` returns `null`. The report shows each span with its total time and number of calls.
 
 = Privacy =
 
@@ -66,7 +65,7 @@ The file loads the profiler before regular plugins, so it can time how long each
 
 = Does the plugin slow down my site? =
 
-Without a session, it adds about 1 ms or less to a page. During a session, it adds about 18 ms, or about 36%, because it times every hook callback. Only the administrator who started the session pays that cost, and only for one hour.
+For visitors, it adds about 1 ms or less to a page. Requests by administrators are profiled, and each one takes about 18 ms longer, or about 36%, because the profiler times every hook callback. Deactivate the plugin when you are done profiling.
 
 = How is it different from Query Monitor? =
 
@@ -78,7 +77,7 @@ The profiler leaves its own time out of every number. Each report says how much 
 
 = Why is time to first byte so slow while profiling? =
 
-During a session, the plugin holds the whole page until the request ends, so it can send the `Server-Timing` header. The browser gets the first byte only then, so time to first byte equals the full request time. Turn profiling off before you measure time to first byte.
+During a profiled request, the plugin holds the whole page until the request ends, so it can send the `Server-Timing` header. The browser gets the first byte only then, so time to first byte equals the full request time. Measure time to first byte while logged out, or with the plugin inactive.
 
 = Why does the same page show different times? =
 
@@ -88,9 +87,17 @@ Every request varies a little, because of caches, the database and other work on
 
 Most are. WordPress loads mu-plugins in file name order, and the profiler starts in `0-lifecycle-profiler-loader.php`. An mu-plugin whose name sorts before it, such as `00-cache.php`, loads before the profiler, so its load time is not measured.
 
-= Who can start a session? =
+= Whose requests are profiled? =
 
-Users with the `manage_options` capability, usually administrators. Other visitors are never profiled. On multisite, site administrators can profile their own site.
+Requests by users with the `manage_options` capability, usually administrators. Visitors and other logged-in users are never profiled. On multisite, site administrators are profiled on their own site.
+
+= How do I stop profiling? =
+
+Deactivate the plugin. There is no on and off switch, because an active plugin means you want to profile.
+
+= Why does the plugin set a cookie? =
+
+The profiler decides whether to profile a request before other plugins load, when WordPress cannot check the login yet. So when an administrator logs in, the plugin sets a signed cookie. It lasts as long as the login, and logging out removes it. An administrator who was already logged in gets the cookie on their next page load.
 
 = Why does a REST request have no Server-Timing header? =
 
@@ -98,7 +105,7 @@ WordPress treats a REST request that uses cookies but no nonce as logged out. Se
 
 = Which requests save a report? =
 
-Every page load during a session, except AJAX, cron and REST requests, and the plugin's own screen and actions. The plugin keeps the newest 20 reports. Change the number with the `lifecycle_profiler_max_reports` filter.
+Every page load by an administrator, except AJAX, cron and REST requests, and the plugin's own screen and actions. The plugin keeps the newest 20 reports. Change the number with the `lifecycle_profiler_max_reports` filter.
 
 = What does uninstall remove? =
 
@@ -110,13 +117,14 @@ All plugin options on every site, including every report, and the mu-plugin file
 2. The slowest hook callbacks, with the hook, the priority and where each one is defined.
 3. The template, the template parts and the time of each block type.
 4. The compare screen shows the change between two reports, with the largest change first.
-5. The admin bar item starts and stops a profiling session.
+5. The admin bar item opens the report of the current page and shows its request time.
 
 == Changelog ==
 
 = 1.0.0 =
 
 * First release on wordpress.org.
+* Profile every request by an administrator while the plugin is active, without an on and off switch. The admin bar item now opens the report of the current page and shows its request time.
 * Delete all plugin data on uninstall, on every site of a network.
 * Show source types in the site language.
 * Explain time to first byte while profiling, run-to-run noise and early mu-plugins, and note on the compare screen that single runs vary.
@@ -170,4 +178,4 @@ All plugin options on every site, including every report, and the mu-plugin file
 
 = 1.0.0 =
 
-First release on wordpress.org. Saved reports from 0.3 stay in place.
+First release on wordpress.org. Profiling now runs for every administrator while the plugin is active, so deactivate it when you are done. Saved reports from 0.3 stay in place.

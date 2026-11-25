@@ -6,9 +6,9 @@
  * The social preview is not in .wordpress-org/, because the deploy copies
  * that folder to wordpress.org.
  *
- * Screenshots come from the wp-env development site, which must be running
- * and have at least two saved reports. The compare screenshot uses the two
- * newest reports, so make them for the same page.
+ * Screenshots come from the wp-env development site, which must be running.
+ * The script saves the reports it needs by loading pages as the administrator.
+ * Delete old reports first for a short report list.
  *
  * Usage: node bin/make-wordpress-org-assets.js [--skip-screenshots]
  */
@@ -54,6 +54,12 @@ async function screenshots( browser ) {
 	await page.fill( '#user_pass', 'password' );
 	await page.click( '#wp-submit' );
 
+	// Every page an administrator loads is profiled. Save two reports of the
+	// same page, so the newest report and the compare screen show it.
+	await page.goto( site + '/' );
+	await page.goto( site + '/sample-page/' );
+	await page.goto( site + '/sample-page/' );
+
 	await page.goto( site + '/wp-admin/tools.php?page=lifecycle-profiler' );
 	await shot( 1 );
 
@@ -67,15 +73,13 @@ async function screenshots( browser ) {
 	await showHeading( 'Plugins, themes and core' );
 	await shot( 4 );
 
-	// Turn the session on for the admin bar screenshot, then off again.
-	const toggle = '#wp-admin-bar-lifecycle-profiler > a';
+	// The administrator is profiled, so the admin bar item shows the request time.
+	const item = '#wp-admin-bar-lifecycle-profiler > a';
 
 	await page.setViewportSize( { width: 1280, height: 420 } );
 	await page.goto( site + '/sample-page/' );
-	await page.click( toggle );
-	await page.locator( toggle, { hasText: 'Profiler: ON' } ).waitFor();
+	await page.locator( item, { hasText: ' ms' } ).waitFor();
 	await shot( 5 );
-	await page.click( toggle );
 
 	await page.close();
 }
