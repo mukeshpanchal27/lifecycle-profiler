@@ -88,7 +88,7 @@ function render_admin_page(): void {
 		<?php if ( null === $report ) : ?>
 			<?php
 			wp_admin_notice(
-				esc_html__( 'No report yet. Click "Profiler: OFF" in the admin bar to start a session, then load the page you want to profile.', 'lifecycle-profiler' ),
+				esc_html__( 'No report yet. Load the page you want to profile. Every page you load as an administrator saves a report.', 'lifecycle-profiler' ),
 				array(
 					'type'               => 'info',
 					// Inline keeps the notice in place, so WordPress does not move it above the heading.
